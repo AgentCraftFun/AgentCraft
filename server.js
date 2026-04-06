@@ -423,13 +423,25 @@ function agentAI(agent) {
   // Update hunger and energy
   agent.hunger = Math.min(100, agent.hunger + 0.008);
   if (agent.currentTask !== 'rest' && agent.currentTask !== 'idle') {
-    agent.energy = Math.max(0, agent.energy - 0.015);
+    const energyDrain = gameState.activeEvent === 'Thunderstorm' ? 0.03 : 0.015;
+    agent.energy = Math.max(0, agent.energy - energyDrain);
   }
   if (agent.hunger > 60) agent.energy = Math.max(0, agent.energy - 0.01);
 
   // Morale effects
   if (agent.clan) agent.morale = Math.min(100, agent.morale + 0.002);
   if (agent.hunger > 70) agent.morale = Math.max(0, agent.morale - 0.005);
+
+  // Optimist morale aura: boost nearby agents
+  if (agent.personality === 'optimist') {
+    for (const other of gameState.agents) {
+      if (other.name === agent.name || other.knockedOut) continue;
+      const dx = other.x - agent.x, dy = other.y - agent.y;
+      if (dx * dx + dy * dy < 150 * 150) {
+        other.morale = Math.min(100, other.morale + 0.003);
+      }
+    }
+  }
 
   // Night behavior
   const isNight = gameState.timeOfDay > 0.8 || gameState.timeOfDay < 0.2;
@@ -460,6 +472,30 @@ function agentAI(agent) {
 
   // ---- TASK SELECTION ----
 
+  // Chaotic: 25% chance to pick a completely random task instead of following priority
+  if (agent.personality === 'chaotic' && Math.random() < 0.25) {
+    const chaoticTasks = ['chop', 'mine', 'forage', 'explore', 'socialize'];
+    const pick = chaoticTasks[Math.floor(Math.random() * chaoticTasks.length)];
+    if (pick === 'chop') {
+      const tree = findNearestResource(agent, 'tree');
+      if (tree) { agent.currentTask = 'chop'; agent.taskTarget = tree; agent.targetX = tree.x * TILE_SIZE + TILE_SIZE/2; agent.targetY = tree.y * TILE_SIZE + TILE_SIZE/2; return; }
+    } else if (pick === 'mine') {
+      const rock = findNearestResource(agent, 'rock');
+      if (rock) { agent.currentTask = 'mine'; agent.taskTarget = rock; agent.targetX = rock.x * TILE_SIZE + TILE_SIZE/2; agent.targetY = rock.y * TILE_SIZE + TILE_SIZE/2; return; }
+    } else if (pick === 'forage') {
+      const f = findNearestResource(agent, 'forage');
+      if (f) { agent.currentTask = 'forage'; agent.taskTarget = f; agent.targetX = f.x * TILE_SIZE + TILE_SIZE/2; agent.targetY = f.y * TILE_SIZE + TILE_SIZE/2; return; }
+    } else if (pick === 'socialize') {
+      const nearby = findNearbyAgent(agent, 300);
+      if (nearby) { agent.currentTask = 'socialize'; agent.socialTarget = nearby.name; agent.targetX = nearby.x; agent.targetY = nearby.y; return; }
+    } else {
+      agent.currentTask = 'explore';
+      const tx = agent.x + (Math.random() - 0.5) * 600;
+      const ty = agent.y + (Math.random() - 0.5) * 600;
+      if (isWalkable(tx, ty)) { agent.targetX = tx; agent.targetY = ty; return; }
+    }
+  }
+
   // 1. SURVIVAL
   if (agent.health < 20) {
     agent.currentTask = 'rest';
@@ -473,6 +509,27 @@ function agentAI(agent) {
       agent.hunger = Math.max(0, agent.hunger - 30);
       agent.health = Math.min(100, agent.health + 5);
       return;
+    }
+    // Desperate: steal food from nearby agent
+    if (agent.hunger > 85) {
+      const victim = findNearbyAgent(agent, 80);
+      if (victim && victim.inventory.food > 2 && (!agent.clan || agent.clan !== victim.clan)) {
+        const stolen = Math.min(3, victim.inventory.food - 1);
+        victim.inventory.food -= stolen;
+        agent.inventory.food += stolen;
+        agent.hunger = Math.max(0, agent.hunger - 20);
+        if (!agent.relationships[victim.name]) agent.relationships[victim.name] = 0;
+        if (!victim.relationships[agent.name]) victim.relationships[agent.name] = 0;
+        agent.relationships[victim.name] -= 20;
+        victim.relationships[agent.name] -= 20;
+        addEvent(agent.name + ' stole food from ' + victim.name + '!');
+        // Increase clan tension if different clans
+        if (agent.clan && victim.clan && agent.clan !== victim.clan) {
+          const aClan = gameState.clans.find(c => c.id === agent.clan);
+          if (aClan) { if (!aClan.tensions) aClan.tensions = {}; aClan.tensions[victim.clan] = Math.min(100, (aClan.tensions[victim.clan] || 0) + 15); }
+        }
+        return;
+      }
     }
     const forage = findNearestResource(agent, 'forage');
     if (forage) {
@@ -563,6 +620,27 @@ function agentAI(agent) {
 
 function completeTask(agent) {
   const bonus = getGatherBonus(agent);
+
+  // Wandering Merchant: bonus resources on any gather task
+  if (gameState.activeEvent === 'Wandering Merchant' && ['chop', 'mine', 'forage'].includes(agent.currentTask)) {
+    const tradeBonus = Math.random() < 0.3;
+    if (tradeBonus) {
+      agent.inventory.food += 2;
+      agent.inventory.wood += 1;
+    }
+  }
+
+  // Dreamer: chance to find rare resources on any gather task
+  if (agent.personality === 'dreamer' && ['chop', 'mine', 'forage'].includes(agent.currentTask)) {
+    if (Math.random() < 0.12) {
+      const rareType = Math.random() < 0.5 ? 'gold' : 'stone';
+      const rareAmt = 2 + Math.floor(Math.random() * 3);
+      agent.inventory[rareType] += rareAmt;
+      agent.totalGathered += rareAmt;
+      addEvent(agent.name + ' found rare ' + rareType + '! (+' + rareAmt + ')');
+    }
+  }
+
   switch (agent.currentTask) {
     case 'chop':
       if (agent.taskTarget) {
@@ -599,7 +677,9 @@ function completeTask(agent) {
       }
       break;
     case 'forage':
-      const foodAmount = Math.round(3 * bonus);
+      let foodMult = 1.0;
+      if (gameState.activeEvent === 'Bountiful Harvest') foodMult = 1.5;
+      const foodAmount = Math.round(3 * bonus * foodMult);
       agent.inventory.food += foodAmount;
       agent.totalGathered += foodAmount;
       agent.hunger = Math.max(0, agent.hunger - 20);
@@ -635,7 +715,7 @@ function completeTask(agent) {
 // When agent arrives at target and has no timer set yet, start the work timer
 function onAgentArrived(agent) {
   switch (agent.currentTask) {
-    case 'chop': agent.taskTimer = 100; break; // 5 sec
+    case 'chop': agent.taskTimer = gameState.activeEvent === 'Strong Winds' ? 70 : 100; break;
     case 'mine': agent.taskTimer = 160; break; // 8 sec
     case 'forage': agent.taskTimer = 60; break; // 3 sec
     case 'socialize': agent.taskTimer = 200; break; // 10 sec
@@ -984,10 +1064,32 @@ function spawnAnimals() {
       }
     }
   }
+  // Fish - in water areas (visual only, occasional jump)
+  for (let i = 0; i < 12; i++) {
+    for (let attempts = 0; attempts < 100; attempts++) {
+      const x = Math.floor(rng() * WORLD_WIDTH);
+      const y = Math.floor(rng() * WORLD_HEIGHT);
+      if (gameState.terrain[y][x].type === 'shallow_water' || gameState.terrain[y][x].type === 'deep_water') {
+        gameState.animals.push({
+          type: 'fish', x: x * TILE_SIZE, y: y * TILE_SIZE,
+          targetX: null, targetY: null, fleeing: false, fleeTimer: 0, wanderTimer: 0,
+          jumpTimer: Math.floor(rng() * 200)
+        });
+        break;
+      }
+    }
+  }
 }
 
 function updateAnimals() {
   for (const animal of gameState.animals) {
+    // Fish: just update jump timer, no movement
+    if (animal.type === 'fish') {
+      if (animal.jumpTimer !== undefined) animal.jumpTimer--;
+      if (animal.jumpTimer <= 0) animal.jumpTimer = 100 + Math.floor(Math.random() * 200);
+      continue;
+    }
+
     // Check for nearby agents (flee)
     if (animal.type !== 'wolf') {
       let threatDist = animal.type === 'rabbit' ? 120 : 180;
@@ -1190,6 +1292,45 @@ const WORLD_EVENTS = [
       }
     },
     unapply() { addEvent('The dragon has flown away. Peace returns.'); }
+  },
+  { name: 'Earthquake', duration: 200, effect: 'earthquake',
+    apply() {
+      // Small chance of building damage in one settlement
+      if (gameState.settlements.length > 0) {
+        const stl = gameState.settlements[Math.floor(Math.random() * gameState.settlements.length)];
+        const buildings = gameState.buildings.filter(b => b.settlementId === stl.id && b.complete);
+        if (buildings.length > 0 && Math.random() < 0.4) {
+          const target = buildings[Math.floor(Math.random() * buildings.length)];
+          const idx = gameState.buildings.indexOf(target);
+          if (idx !== -1) {
+            gameState.buildings.splice(idx, 1);
+            addEvent('Earthquake! A ' + target.type + ' in ' + stl.name + ' collapsed!');
+            updateEra();
+            return;
+          }
+        }
+      }
+      addEvent('The ground shakes! An earthquake rumbles through the land.');
+    },
+    unapply() {}
+  },
+  { name: 'Plague of Locusts', duration: 600, effect: 'locusts',
+    apply() {
+      const farms = gameState.buildings.filter(b => b.type === 'Farm' && b.complete);
+      if (farms.length > 0) {
+        const target = farms[Math.floor(Math.random() * farms.length)];
+        // Remove the farm
+        const idx = gameState.buildings.indexOf(target);
+        if (idx !== -1) {
+          gameState.buildings.splice(idx, 1);
+          addEvent('A plague of locusts destroyed a farm!');
+          updateEra();
+          return;
+        }
+      }
+      addEvent('Locusts swarm the land, but find no crops to devour.');
+    },
+    unapply() { addEvent('The locusts have moved on.'); }
   }
 ];
 
@@ -1278,6 +1419,31 @@ function checkClanFormation(agent1, agent2) {
   }
 }
 
+function updateClanResourceSharing() {
+  for (const clan of gameState.clans) {
+    const members = gameState.agents.filter(a => a.clan === clan.id && !a.knockedOut);
+    if (members.length < 2) continue;
+    for (const agent of members) {
+      // Share food if one member is hungry
+      if (agent.inventory.food <= 1) {
+        const donor = members.find(m => m.name !== agent.name && m.inventory.food > 5);
+        if (donor) {
+          const share = Math.min(3, donor.inventory.food - 3);
+          if (share > 0) { donor.inventory.food -= share; agent.inventory.food += share; }
+        }
+      }
+      // Share wood if one member is low
+      if (agent.inventory.wood <= 2) {
+        const donor = members.find(m => m.name !== agent.name && m.inventory.wood > 15);
+        if (donor) {
+          const share = Math.min(5, donor.inventory.wood - 10);
+          if (share > 0) { donor.inventory.wood -= share; agent.inventory.wood += share; }
+        }
+      }
+    }
+  }
+}
+
 function updateRelationships() {
   // Passive relationship gain for nearby agents
   for (let i = 0; i < gameState.agents.length; i++) {
@@ -1294,6 +1460,33 @@ function updateRelationships() {
         if (a.race !== b.race) rate *= 0.8;
         a.relationships[b.name] = Math.min(100, a.relationships[b.name] + rate);
         b.relationships[a.name] = Math.min(100, b.relationships[a.name] + rate);
+
+        // Cross-clan socializing reduces tension
+        if (a.clan && b.clan && a.clan !== b.clan) {
+          const aClan = gameState.clans.find(c => c.id === a.clan);
+          if (aClan && aClan.tensions && aClan.tensions[b.clan] > 0) {
+            aClan.tensions[b.clan] = Math.max(0, aClan.tensions[b.clan] - 0.05); // -5 equivalent over time
+          }
+        }
+
+        // Trade: agents from different clans with positive relations trade resources
+        if (a.clan && b.clan && a.clan !== b.clan && (a.relationships[b.name] || 0) > 20) {
+          if (Math.random() < 0.01) { // rare event each relationship tick
+            let traded = false;
+            if (a.inventory.wood > 15 && b.inventory.food > 5 && a.inventory.food < 3) {
+              a.inventory.wood -= 5; b.inventory.wood += 5; b.inventory.food -= 2; a.inventory.food += 2; traded = true;
+            } else if (b.inventory.wood > 15 && a.inventory.food > 5 && b.inventory.food < 3) {
+              b.inventory.wood -= 5; a.inventory.wood += 5; a.inventory.food -= 2; b.inventory.food += 2; traded = true;
+            }
+            if (traded) {
+              const aClan = gameState.clans.find(c => c.id === a.clan);
+              if (aClan && aClan.tensions) {
+                aClan.tensions[b.clan] = Math.max(0, (aClan.tensions[b.clan] || 0) - 10);
+              }
+              addEvent(a.name + ' traded with ' + b.name + '! Clan tensions ease.');
+            }
+          }
+        }
       }
     }
   }
@@ -1323,6 +1516,50 @@ function updateTensions() {
       // Natural cooling
       clan.tensions[otherClan.id] = Math.max(0, clan.tensions[otherClan.id] - 0.0002);
       clan.tensions[otherClan.id] = Math.min(100, clan.tensions[otherClan.id]);
+    }
+  }
+}
+
+function updateWarActions() {
+  for (const clan of gameState.clans) {
+    if (!clan.tensions) continue;
+    for (const [otherId, tension] of Object.entries(clan.tensions)) {
+      // Raids at tension 70-90: clan members steal from enemy settlement
+      if (tension >= 70 && tension < 90 && Math.random() < 0.002) {
+        const otherClan = gameState.clans.find(c => c.id === otherId);
+        if (!otherClan || !otherClan.settlementId) continue;
+        const enemySettlement = gameState.settlements.find(s => s.id === otherClan.settlementId);
+        if (!enemySettlement) continue;
+        const raiders = gameState.agents.filter(a => a.clan === clan.id && !a.knockedOut);
+        if (raiders.length === 0) continue;
+        const raider = raiders[Math.floor(Math.random() * raiders.length)];
+        // Steal resources from enemy settlement area
+        const stolenWood = 5 + Math.floor(Math.random() * 11);
+        const stolenStone = Math.floor(Math.random() * 5);
+        raider.inventory.wood += stolenWood;
+        raider.inventory.stone += stolenStone;
+        addEvent('The ' + clan.name + ' raided ' + enemySettlement.name + '! Stole ' + stolenWood + ' wood.');
+        gameState.warLog.push({ type: 'raid', clan: clan.name, target: enemySettlement.name, tick: gameState.tickCount });
+      }
+
+      // Total war at tension 90-100: building damage possible
+      if (tension >= 90 && Math.random() < 0.001) {
+        const otherClan = gameState.clans.find(c => c.id === otherId);
+        if (!otherClan || !otherClan.settlementId) continue;
+        const enemyBuildings = gameState.buildings.filter(b => b.settlementId === otherClan.settlementId && b.complete);
+        if (enemyBuildings.length === 0) continue;
+        const target = enemyBuildings[Math.floor(Math.random() * enemyBuildings.length)];
+        // Damage building (remove it)
+        const idx = gameState.buildings.indexOf(target);
+        if (idx !== -1) {
+          gameState.buildings.splice(idx, 1);
+          addEvent('The ' + clan.name + ' destroyed a ' + target.type + ' in ' +
+            (gameState.settlements.find(s => s.id === otherClan.settlementId) || {}).name + '!');
+          gameState.warLog.push({ type: 'destruction', clan: clan.name, building: target.type, tick: gameState.tickCount });
+          updateEra();
+          updateSettlements();
+        }
+      }
     }
   }
 }
@@ -1598,8 +1835,14 @@ function gameTick() {
   // Relationships (every 20 ticks = 1 sec)
   if (gameState.tickCount % 20 === 0) updateRelationships();
 
+  // Clan resource sharing (every 60 ticks = 3 sec)
+  if (gameState.tickCount % 60 === 0) updateClanResourceSharing();
+
   // Tensions (every 60 ticks = 3 sec)
   if (gameState.tickCount % 60 === 0) updateTensions();
+
+  // War actions (every 100 ticks = 5 sec)
+  if (gameState.tickCount % 100 === 0) updateWarActions();
 
   // Settlements (every 100 ticks = 5 sec)
   if (gameState.tickCount % 100 === 0) updateSettlements();
@@ -1693,7 +1936,7 @@ function broadcastState() {
     })),
     settlements: gameState.settlements,
     animals: gameState.animals.map(a => ({
-      type: a.type, x: a.x, y: a.y, fleeing: a.fleeing
+      type: a.type, x: a.x, y: a.y, fleeing: a.fleeing, jumpTimer: a.jumpTimer || 0
     })),
     clans: gameState.clans,
     day: gameState.day,

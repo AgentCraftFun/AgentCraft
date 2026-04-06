@@ -60,6 +60,16 @@ body { background: #1a1a2e; color: #e0e0e0; font-family: 'Courier New', monospac
   </div>
   <div id="sidebar">
     <canvas id="minimap" width="254" height="160"></canvas>
+    <div id="agent-detail" style="display:none;padding:8px;background:rgba(255,255,255,0.06);border-radius:4px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span id="detail-name" style="font-weight:bold;color:#7fdbca;font-size:14px"></span>
+        <span id="detail-close" style="cursor:pointer;color:#888">[x]</span>
+      </div>
+      <div id="detail-info" style="font-size:11px;color:#bbb;margin-top:4px"></div>
+      <div id="detail-stats" style="font-size:11px;margin-top:4px"></div>
+      <div id="detail-inventory" style="font-size:11px;margin-top:4px"></div>
+      <div id="detail-relations" style="font-size:11px;margin-top:4px;color:#999"></div>
+    </div>
     <div class="section-title">ACTIVE AGENTS</div>
     <div id="agent-list"></div>
     <div class="section-title">SETTLEMENTS</div>
@@ -234,6 +244,8 @@ renderMinimap();
 let serverState = null;
 let renderEntities = { agents: [], buildings: [], animals: [], settlements: [], clans: [] };
 let particles = [];
+let floatingTexts = [];
+let selectedAgent = null;
 let bannerTimer = 0;
 let lastBannerText = '';
 
@@ -343,21 +355,41 @@ function drawBuilding(bld, rx, ry) {
   ctx.beginPath(); ctx.ellipse(s/2, s + 2, s * 0.7, 4, 0, 0, Math.PI * 2); ctx.fill();
 
   if (!bld.complete) {
-    // Construction animation
+    // 4-stage construction animation
     ctx.globalAlpha = 0.5 + pct * 0.5;
-    // Foundation
-    ctx.fillStyle = '#8a7a5a';
-    ctx.fillRect(0, s * 0.7, s, s * 0.3);
-    if (pct > 0.25) {
-      // Walls
-      ctx.fillStyle = '#a09070';
-      ctx.fillRect(0, s * (1 - pct * 0.7), s, s * pct * 0.7);
-    }
-    if (pct > 0.5) {
-      // Scaffolding
+    if (pct <= 0.25) {
+      // Stage 1: Foundation/platform only
+      ctx.fillStyle = '#8a7a5a';
+      ctx.fillRect(0, s * 0.7, s, s * 0.3);
+      ctx.fillStyle = '#7a6a4a';
+      ctx.fillRect(1, s * 0.75, s - 2, s * 0.1);
+    } else if (pct <= 0.50) {
+      // Stage 2: Walls at half height + scaffolding poles
+      ctx.fillStyle = '#8a7a5a'; ctx.fillRect(0, s * 0.7, s, s * 0.3);
+      ctx.fillStyle = '#a09070'; ctx.fillRect(0, s * 0.4, s, s * 0.3);
       ctx.strokeStyle = '#aa8844'; ctx.lineWidth = 1;
-      ctx.strokeRect(-2, s * 0.2, s + 4, s * 0.6);
-      ctx.beginPath(); ctx.moveTo(s/2, s*0.2); ctx.lineTo(s/2, -2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, s * 0.1); ctx.lineTo(0, s); ctx.moveTo(s, s * 0.1); ctx.lineTo(s, s); ctx.stroke();
+    } else if (pct <= 0.75) {
+      // Stage 3: Full walls, no roof, scaffolding
+      ctx.fillStyle = '#8a7a5a'; ctx.fillRect(0, s * 0.7, s, s * 0.3);
+      ctx.fillStyle = '#a09070'; ctx.fillRect(0, s * 0.15, s, s * 0.85);
+      ctx.fillStyle = '#5a3a1a'; ctx.fillRect(s/2 - 2, s * 0.5, 4, s * 0.5);
+      ctx.strokeStyle = '#aa8844'; ctx.lineWidth = 1;
+      ctx.strokeRect(-2, s * 0.1, s + 4, s * 0.8);
+      ctx.beginPath(); ctx.moveTo(s/2, s*0.1); ctx.lineTo(s/2, -4); ctx.stroke();
+    } else {
+      // Stage 4: Roof appearing, scaffolding still visible
+      ctx.fillStyle = '#8a7a5a'; ctx.fillRect(0, s * 0.7, s, s * 0.3);
+      ctx.fillStyle = '#a09070'; ctx.fillRect(0, s * 0.15, s, s * 0.85);
+      ctx.fillStyle = '#5a3a1a'; ctx.fillRect(s/2 - 2, s * 0.5, 4, s * 0.5);
+      const roofPct = (pct - 0.75) / 0.25;
+      ctx.fillStyle = '#885533';
+      ctx.beginPath(); ctx.moveTo(-1, s * 0.15); ctx.lineTo(s/2, s * 0.15 - 10 * roofPct); ctx.lineTo(s + 1, s * 0.15); ctx.fill();
+      // Fading scaffolding
+      ctx.globalAlpha *= (1 - roofPct * 0.7);
+      ctx.strokeStyle = '#aa8844'; ctx.lineWidth = 1;
+      ctx.strokeRect(-2, s * 0.1, s + 4, s * 0.8);
+      ctx.globalAlpha = 0.5 + pct * 0.5;
     }
     ctx.globalAlpha = 1;
     ctx.restore();
@@ -470,6 +502,22 @@ function drawAnimal(animal, rx, ry) {
     ctx.fillStyle = '#404040';
     ctx.fillRect(-5, 3, 2, 4); ctx.fillRect(3, 3, 2, 4);
     ctx.fillStyle = '#aa3333'; ctx.fillRect(-7, -8, 2, 3); ctx.fillRect(-4, -8, 2, 3); // ears
+  } else if (animal.type === 'fish') {
+    // Fish: jump animation when jumpTimer is low
+    const jumping = animal.jumpTimer < 20;
+    const jumpY = jumping ? -Math.sin((20 - animal.jumpTimer) / 20 * Math.PI) * 8 : 0;
+    ctx.translate(0, jumpY);
+    ctx.globalAlpha = jumping ? 1 : 0.6;
+    ctx.fillStyle = '#6699bb';
+    ctx.beginPath(); ctx.ellipse(0, 0, 4, 2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#5588aa'; // tail
+    ctx.beginPath(); ctx.moveTo(4, 0); ctx.lineTo(7, -2); ctx.lineTo(7, 2); ctx.closePath(); ctx.fill();
+    if (jumping) {
+      // Splash droplets
+      ctx.fillStyle = 'rgba(150,200,255,0.5)';
+      ctx.fillRect(-2, 3, 1, 2); ctx.fillRect(1, 4, 1, 2); ctx.fillRect(-4, 2, 1, 1);
+    }
+    ctx.globalAlpha = 1;
   }
   ctx.restore();
 }
@@ -575,6 +623,46 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 
+// ---- Agent Detail Panel ----
+function showAgentDetail(name) {
+  const panel = document.getElementById('agent-detail');
+  panel.style.display = 'block';
+}
+function updateAgentDetail() {
+  if (!selectedAgent || !serverState) return;
+  const a = serverState.agents.find(ag => ag.name === selectedAgent);
+  if (!a) { document.getElementById('agent-detail').style.display = 'none'; return; }
+  document.getElementById('detail-name').textContent = a.name + ' (' + a.race + ' ' + a.personality + ')';
+  const TASK_ICONS = { idle: 'Idle', chop: 'Chopping', mine: 'Mining', forage: 'Foraging', build: 'Building', rest: 'Resting', explore: 'Exploring', socialize: 'Chatting', fight: 'Fighting!', flee: 'Fleeing!' };
+  document.getElementById('detail-info').innerHTML = 'Task: <b>' + (TASK_ICONS[a.currentTask] || a.currentTask) + '</b>' +
+    (a.clan ? ' | Clan: ' + ((serverState.clans.find(c => c.id === a.clan) || {}).name || 'Unknown') : '') +
+    (a.knockedOut ? ' | <span style="color:#f44">KNOCKED OUT</span>' : '') +
+    ' | Kills: ' + a.kills + ' | Built: ' + a.buildingsBuilt;
+  const bar = (label, val, max, color) => '<div style="margin:1px 0"><span style="display:inline-block;width:50px">' + label + '</span>' +
+    '<span style="display:inline-block;width:100px;height:6px;background:#333;border-radius:2px;vertical-align:middle">' +
+    '<span style="display:inline-block;width:' + (val/max*100) + '%;height:100%;background:' + color + ';border-radius:2px"></span></span>' +
+    ' <span style="color:#aaa">' + Math.round(val) + '</span></div>';
+  document.getElementById('detail-stats').innerHTML =
+    bar('HP', a.health, 100, a.health > 50 ? '#4a4' : '#a44') +
+    bar('Energy', a.energy, 100, '#48a') +
+    bar('Hunger', a.hunger, 100, '#a84') +
+    bar('Morale', a.morale, 100, '#aa4');
+  document.getElementById('detail-inventory').innerHTML =
+    '<span style="color:#8B4513">Wood: ' + a.inventory.wood + '</span> | ' +
+    '<span style="color:#888">Stone: ' + a.inventory.stone + '</span> | ' +
+    '<span style="color:#ffd700">Gold: ' + (a.inventory.gold || 0) + '</span> | ' +
+    '<span style="color:#6a4">Food: ' + a.inventory.food + '</span>' +
+    ' | Total: ' + a.totalGathered;
+  // Top 3 relationships
+  const rels = Object.entries(a.relationships || {}).sort((a,b) => b[1] - a[1]).slice(0, 3);
+  document.getElementById('detail-relations').innerHTML = rels.length > 0 ?
+    'Relations: ' + rels.map(([n,v]) => n + ': ' + (v > 0 ? '+' : '') + Math.round(v)).join(', ') : '';
+}
+document.getElementById('detail-close').addEventListener('click', () => {
+  document.getElementById('agent-detail').style.display = 'none';
+  selectedAgent = null;
+});
+
 // ---- Deploy & Influence Buttons ----
 document.getElementById('deploy-btn').addEventListener('click', () => {
   if (!ws || ws.readyState !== 1) return;
@@ -627,7 +715,7 @@ function updateUI(state) {
   }
   agentList.innerHTML = agentHtml;
   agentList.querySelectorAll('.agent-item').forEach(el => {
-    el.addEventListener('click', () => { followAgent = el.dataset.agent; });
+    el.addEventListener('click', () => { followAgent = el.dataset.agent; selectedAgent = el.dataset.agent; showAgentDetail(el.dataset.agent); });
   });
 
   // Settlement list
@@ -658,6 +746,9 @@ function updateUI(state) {
   minimapCtx.strokeStyle = '#fff';
   minimapCtx.lineWidth = 1;
   minimapCtx.strokeRect(camX * sx, camY * sy, W / zoom * sx, H / zoom * sy);
+
+  // Update agent detail panel
+  updateAgentDetail();
 }
 
 // Minimap click to move camera
@@ -846,9 +937,44 @@ function render(now) {
         const ip = interpPos[a.name];
         if (ip) {
           particles.push({ x: ip.x, y: ip.y - 5, vx: (Math.random()-0.5)*3, vy: -Math.random()*2, life: 12, maxLife: 12, color: '#ff3333', size: 3 });
+          // Dust cloud
+          particles.push({ x: ip.x + (Math.random()-0.5)*10, y: ip.y + 5, vx: (Math.random()-0.5)*1, vy: -0.5, life: 18, maxLife: 18, color: '#aa9977', size: 3 });
         }
       }
+      // Red flash behind fighting agents
+      if (a.currentTask === 'fight') {
+        const ip = interpPos[a.name];
+        if (ip) {
+          ctx.fillStyle = 'rgba(255,50,50,' + (0.15 + Math.sin(now * 0.01) * 0.1).toFixed(2) + ')';
+          ctx.beginPath(); ctx.arc(ip.x, ip.y, 20, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      // Track health for floating damage numbers
+      if (!a._prevHealth) a._prevHealth = a.health;
+      if (a.health < a._prevHealth) {
+        const ip = interpPos[a.name];
+        if (ip) {
+          const dmg = Math.round(a._prevHealth - a.health);
+          floatingTexts.push({ x: ip.x, y: ip.y - 25, text: '-' + dmg, color: '#ff4444', life: 40, maxLife: 40 });
+        }
+      }
+      a._prevHealth = a.health;
     }
+  }
+
+  // Floating damage numbers
+  for (let i = floatingTexts.length - 1; i >= 0; i--) {
+    const ft = floatingTexts[i];
+    ft.y -= 0.5;
+    ft.life--;
+    if (ft.life <= 0) { floatingTexts.splice(i, 1); continue; }
+    ctx.globalAlpha = ft.life / ft.maxLife;
+    ctx.fillStyle = ft.color;
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(ft.text, ft.x, ft.y);
+    ctx.textAlign = 'left';
+    ctx.globalAlpha = 1;
   }
 
   // Day/night overlay
