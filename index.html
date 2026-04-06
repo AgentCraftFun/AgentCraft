@@ -115,12 +115,13 @@ function fbm(x,y,o,l,g){let s=0,a=1,f=1,m=0;for(let i=0;i<o;i++){s+=noise2d(x*f,
 function getBiome(e,m){if(e<.22)return'deep_water';if(e<.3)return'shallow_water';if(e<.33)return'beach';if(e>.85)return'snow';if(e>.75)return'mountain';if(e>.65)return'mountain_base';if(m<.25&&e<.55)return'desert';if(m>.7&&e<.4)return'swamp';if(m>.6)return'dense_forest';if(m>.4)return'forest';return'grass'}
 
 // === TERRAIN DATA ===
-// Use FLAT colors per biome - NO checkerboard (that causes diagonal stripes)
+// ALL green biomes use SAME color so biome boundaries are invisible
+// Trees alone differentiate grass from forest visually
 const BIOME_COLOR={
   deep_water:'#2858a8',shallow_water:'#3872be',beach:'#d4b896',
-  grass:'#459035',forest:'#3a7832',dense_forest:'#2e6828',
-  desert:'#d0b088',mountain_base:'#847a72',mountain:'#7a6e68',
-  snow:'#e4eef4',swamp:'#385828'
+  grass:'#3e8535',forest:'#3e8535',dense_forest:'#3e8535',
+  desert:'#d0b088',mountain_base:'#7a7568',mountain:'#6a655a',
+  snow:'#e4eef4',swamp:'#3a6a30'
 };
 const terrainData=[];
 for(let y=0;y<WORLD_HEIGHT;y++){terrainData[y]=[];for(let x=0;x<WORLD_WIDTH;x++){
@@ -143,18 +144,14 @@ for(let y=0;y<WORLD_HEIGHT;y++){terrainData[y]=[];for(let x=0;x<WORLD_WIDTH;x++)
   terrainData[y][x]={type:biome,hasTree,treeType,hasRock,stump:false};
 }}
 
-// Visual tree thinning: every other tree in dense areas
+// Visual tree thinning — use ONLY hash randomness (no modular patterns that create stripes)
 for(let y=0;y<WORLD_HEIGHT;y++)for(let x=0;x<WORLD_WIDTH;x++){
   const c=terrainData[y][x];
   if(!c.hasTree){c.drawTree=false;continue}
-  if(c.type==='dense_forest'){
-    // Only draw ~1 in 3 trees
-    c.drawTree=((x+y*3)%3===0)||hashCell(x+777,y+777,42)>.7;
-  }else if(c.type==='forest'){
-    c.drawTree=((x+y*2)%2===0)||hashCell(x+777,y+777,42)>.6;
-  }else{
-    c.drawTree=true;
-  }
+  const h=hashCell(x+777,y+777,42);
+  if(c.type==='dense_forest') c.drawTree=h<.35; // show ~35% of 80% = ~28% coverage
+  else if(c.type==='forest') c.drawTree=h<.45; // show ~45% of 60% = ~27% coverage
+  else c.drawTree=true; // grass/mountain trees are already sparse
 }
 </script>
 <script>
@@ -174,19 +171,13 @@ let terrainDirty=true;
 function renderTerrainCache(){
   for(let y=0;y<WORLD_HEIGHT;y++)for(let x=0;x<WORLD_WIDTH;x++){
     const c=terrainData[y][x];
-    // Flat color per cell — use noise-based subtle variation instead of checkerboard
-    const base=BIOME_COLOR[c.type]||'#459035';
-    tCtx.fillStyle=base;
+    tCtx.fillStyle=BIOME_COLOR[c.type]||'#3e8535';
     tCtx.fillRect(x*TILE_SIZE,y*TILE_SIZE,TILE_SIZE,TILE_SIZE);
-    // Subtle variation using hash — NOT checkerboard
-    const v=hashCell(x+300,y+300,42);
-    if(v<.3){tCtx.fillStyle='rgba(0,0,0,0.04)';tCtx.fillRect(x*TILE_SIZE,y*TILE_SIZE,TILE_SIZE,TILE_SIZE)}
-    else if(v>.85){tCtx.fillStyle='rgba(255,255,255,0.03)';tCtx.fillRect(x*TILE_SIZE,y*TILE_SIZE,TILE_SIZE,TILE_SIZE)}
-    // Small grass details
-    if(c.type==='grass'&&!c.hasTree&&!c.hasRock){
+    // Very sparse grass detail dots (not per-cell variation — that creates patterns)
+    if((c.type==='grass'||c.type==='forest'||c.type==='dense_forest')&&!c.hasTree&&!c.hasRock){
       const fh=hashCell(x+200,y+200,42);
-      if(fh<.03){tCtx.fillStyle='#5aa848';tCtx.fillRect(x*TILE_SIZE+4,y*TILE_SIZE+4,2,2);tCtx.fillRect(x*TILE_SIZE+10,y*TILE_SIZE+9,2,2)}
-      if(fh>.97){tCtx.fillStyle='#ee7788';tCtx.fillRect(x*TILE_SIZE+7,y*TILE_SIZE+7,2,2)}
+      if(fh<.02){tCtx.fillStyle='#4a9a42';tCtx.fillRect(x*TILE_SIZE+5,y*TILE_SIZE+5,2,2)}
+      else if(fh>.98){tCtx.fillStyle='#ee7788';tCtx.fillRect(x*TILE_SIZE+7,y*TILE_SIZE+7,2,2)}
     }
   }
   terrainDirty=false;
@@ -213,24 +204,31 @@ const RACE_COLORS={human:'#3355aa',dwarf:'#aa6633',elf:'#33aa55',orc:'#aa3333'};
 function drawTree(x,y,type,wobble){
   ctx.save();ctx.translate(x,y);
   if(wobble)ctx.rotate(wobble);
-  // Shadow
-  ctx.fillStyle='rgba(0,0,0,0.22)';
-  ctx.beginPath();ctx.ellipse(2,2,9,4,0,0,Math.PI*2);ctx.fill();
   if(type==='pine'){
+    // Shadow
+    ctx.fillStyle='rgba(0,0,0,0.18)';ctx.beginPath();ctx.ellipse(2,2,8,4,0,0,Math.PI*2);ctx.fill();
+    // Trunk
     ctx.fillStyle='#4a3520';ctx.fillRect(-1,-2,3,8);
-    ctx.fillStyle='#1e6e1e';ctx.beginPath();ctx.moveTo(0,-22);ctx.lineTo(-8,-4);ctx.lineTo(8,-4);ctx.fill();
-    ctx.fillStyle='#258a25';ctx.beginPath();ctx.moveTo(0,-18);ctx.lineTo(-5,-8);ctx.lineTo(5,-8);ctx.fill();
+    // Triangle canopy layers
+    ctx.fillStyle='#1a5a1a';ctx.beginPath();ctx.moveTo(0,-22);ctx.lineTo(-9,-4);ctx.lineTo(9,-4);ctx.fill();
+    ctx.fillStyle='#208020';ctx.beginPath();ctx.moveTo(0,-18);ctx.lineTo(-6,-8);ctx.lineTo(6,-8);ctx.fill();
   }else if(type==='birch'){
-    ctx.fillStyle='#ccc0a8';ctx.fillRect(-1,-3,3,9);
-    ctx.fillStyle='#888';ctx.fillRect(0,0,1,1);ctx.fillRect(-1,3,1,1);
-    ctx.fillStyle='#38a838';ctx.beginPath();ctx.arc(0,-12,9,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#48c848';ctx.beginPath();ctx.arc(-2,-14,6,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#60e060';ctx.beginPath();ctx.arc(-3,-16,3,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(0,0,0,0.18)';ctx.beginPath();ctx.ellipse(2,2,10,5,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#ccc0a8';ctx.fillRect(-1,-4,3,10);
+    ctx.fillStyle='#777';ctx.fillRect(0,0,1,1);ctx.fillRect(-1,3,1,1);
+    ctx.fillStyle='#30a030';ctx.beginPath();ctx.arc(0,-14,11,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#45c045';ctx.beginPath();ctx.arc(-2,-16,7,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#60dd60';ctx.beginPath();ctx.arc(-4,-18,3,0,Math.PI*2);ctx.fill();
   }else{
-    ctx.fillStyle='#4a3520';ctx.fillRect(-2,-3,4,9);
-    ctx.fillStyle='#2a8a2a';ctx.beginPath();ctx.arc(0,-12,10,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#35a835';ctx.beginPath();ctx.arc(-2,-14,7,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#50c850';ctx.beginPath();ctx.arc(-3,-16,3,0,Math.PI*2);ctx.fill();
+    // Oak — the main tree. Big round lush canopy
+    ctx.fillStyle='rgba(0,0,0,0.18)';ctx.beginPath();ctx.ellipse(2,2,11,5,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#4a3520';ctx.fillRect(-2,-4,4,10);
+    // Main canopy — large circle
+    ctx.fillStyle='#288828';ctx.beginPath();ctx.arc(0,-14,12,0,Math.PI*2);ctx.fill();
+    // Highlight
+    ctx.fillStyle='#35aa35';ctx.beginPath();ctx.arc(-2,-16,8,0,Math.PI*2);ctx.fill();
+    // Specular
+    ctx.fillStyle='#50cc50';ctx.beginPath();ctx.arc(-4,-19,3,0,Math.PI*2);ctx.fill();
   }
   ctx.restore();
 }
