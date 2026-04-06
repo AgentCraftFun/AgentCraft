@@ -5,1165 +5,569 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AgentCraft</title>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #0a0a14; color: #e0e0e0; font-family: 'Courier New', monospace; overflow: hidden; }
-#loading { position: fixed; inset: 0; background: #0a0a14; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
-#loading h1 { color: #f0c040; font-size: 32px; margin-bottom: 16px; letter-spacing: 4px; }
-#loading p { color: #888; font-size: 14px; }
-#loading .spinner { width: 40px; height: 40px; border: 3px solid #222; border-top-color: #f0c040; border-radius: 50%; animation: spin 1s linear infinite; margin-top: 20px; }
-@keyframes spin { to { transform: rotate(360deg); } }
-#reconnect { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 999; flex-direction: column; }
-#reconnect h2 { color: #ff6b6b; margin-bottom: 10px; }
-#reconnect p { color: #888; }
-#game-container { display: none; width: 100vw; height: 100vh; position: relative; }
-#gameCanvas { position: absolute; top: 0; left: 0; cursor: grab; image-rendering: pixelated; }
-#sidebar { position: absolute; top: 0; right: 0; width: 280px; height: 100vh; background: #111118; border-left: 2px solid #252530; overflow-y: auto; z-index: 10; padding: 12px; font-size: 12px; }
-#sidebar::-webkit-scrollbar { width: 6px; }
-#sidebar::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-#topbar { position: absolute; top: 0; left: 0; right: 280px; height: 40px; background: #0a0a14; border-bottom: 2px solid #252530; z-index: 10; display: flex; align-items: center; padding: 0 16px; gap: 16px; font-size: 13px; }
-#topbar .title { color: #f0c040; font-weight: bold; font-size: 16px; letter-spacing: 2px; }
-#topbar .stat { color: #777; }
-#topbar .stat span { color: #ddd; font-weight: bold; }
-#topbar .live-dot { display: inline-block; width: 8px; height: 8px; background: #ff3333; border-radius: 50%; animation: pulse 1.5s ease-in-out infinite; margin-right: 4px; vertical-align: middle; }
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-#minimap { width: 254px; height: 200px; border: 1px solid #333; margin-bottom: 10px; image-rendering: pixelated; background: #0a0a14; }
-.section-title { color: #f0c040; font-size: 12px; font-weight: bold; margin: 12px 0 6px; border-bottom: 1px solid #252530; padding-bottom: 3px; text-transform: uppercase; letter-spacing: 1px; }
-.agent-item { padding: 5px 6px; margin: 2px 0; border-radius: 3px; background: rgba(255,255,255,0.03); cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.15s; }
-.agent-item:hover { background: rgba(255,255,255,0.08); }
-.agent-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.15); }
-.agent-name { font-weight: bold; color: #ddd; font-size: 12px; }
-.agent-task { color: #777; font-size: 10px; }
-.agent-health-bar { width: 40px; height: 4px; background: #1a1a24; border-radius: 2px; margin-left: auto; }
-.agent-health-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
-.settlement-item { padding: 4px 6px; margin: 2px 0; color: #b0c8a0; cursor: pointer; }
-.settlement-item:hover { color: #d0e8c0; }
-.event-item { padding: 3px 0; color: #666; font-size: 11px; border-bottom: 1px solid rgba(255,255,255,0.03); }
-.event-item:first-child { color: #bbb; }
-#deploy-panel { margin-top: 10px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 4px; border: 1px solid #252530; }
-#deploy-panel input, #deploy-panel select { width: 100%; padding: 5px 6px; margin: 3px 0; background: #0a0a14; color: #e0e0e0; border: 1px solid #333; border-radius: 3px; font-family: inherit; font-size: 12px; }
-#deploy-panel button, .influence-btn { width: 100%; padding: 7px; margin: 3px 0; background: #1a3a2a; color: #7fdbca; border: 1px solid #2a5a4a; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 12px; transition: background 0.15s; }
-#deploy-panel button:hover, .influence-btn:hover { background: #2a5a4a; }
-.influence-btn { background: #1a1a2e; color: #99a; border-color: #333; }
-.points-display { color: #ffd700; font-weight: bold; text-align: center; margin: 6px 0; font-size: 13px; }
-.event-banner { position: absolute; top: 50px; left: 50%; transform: translateX(-50%); background: rgba(10,10,20,0.95); border: 2px solid #f0c040; border-radius: 6px; padding: 10px 24px; color: #f0c040; font-size: 14px; font-weight: bold; z-index: 20; pointer-events: none; opacity: 0; transition: opacity 0.5s; }
-.event-banner.visible { opacity: 1; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a14;color:#e0e0e0;font-family:'Courier New',monospace;overflow:hidden}
+#loading{position:fixed;inset:0;background:#0a0a14;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000}
+#loading h1{color:#f0c040;font-size:32px;margin-bottom:16px;letter-spacing:4px}
+#loading p{color:#888;font-size:14px}
+#loading .spinner{width:40px;height:40px;border:3px solid #222;border-top-color:#f0c040;border-radius:50%;animation:spin 1s linear infinite;margin-top:20px}
+@keyframes spin{to{transform:rotate(360deg)}}
+#reconnect{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:999;flex-direction:column}
+#reconnect h2{color:#ff6b6b;margin-bottom:10px}
+#game-container{display:none;width:100vw;height:100vh;position:relative}
+#gameCanvas{position:absolute;top:0;left:0;cursor:grab;image-rendering:pixelated}
+#sidebar{position:absolute;top:0;right:0;width:280px;height:100vh;background:#111118;border-left:2px solid #252530;overflow-y:auto;z-index:10;padding:12px;font-size:12px}
+#sidebar::-webkit-scrollbar{width:6px}
+#sidebar::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+#topbar{position:absolute;top:0;left:0;right:280px;height:36px;background:#0a0a14;border-bottom:2px solid #252530;z-index:10;display:flex;align-items:center;padding:0 16px;gap:16px;font-size:13px}
+#topbar .title{color:#f0c040;font-weight:bold;font-size:16px;letter-spacing:2px}
+#topbar .stat{color:#777}
+#topbar .stat span{color:#ddd;font-weight:bold}
+.live-dot{display:inline-block;width:8px;height:8px;background:#ff3333;border-radius:50%;animation:pulse 1.5s ease-in-out infinite;margin-right:4px;vertical-align:middle}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+#minimap{width:254px;height:200px;border:1px solid #333;margin-bottom:10px;image-rendering:pixelated}
+.section-title{color:#f0c040;font-size:12px;font-weight:bold;margin:12px 0 6px;border-bottom:1px solid #252530;padding-bottom:3px;text-transform:uppercase;letter-spacing:1px}
+.agent-item{padding:5px 6px;margin:2px 0;border-radius:3px;background:rgba(255,255,255,.03);cursor:pointer;display:flex;align-items:center;gap:6px}
+.agent-item:hover{background:rgba(255,255,255,.08)}
+.agent-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;border:1px solid rgba(255,255,255,.15)}
+.agent-name{font-weight:bold;color:#ddd;font-size:12px}
+.agent-task{color:#777;font-size:10px}
+.agent-health-bar{width:40px;height:4px;background:#1a1a24;border-radius:2px;margin-left:auto}
+.agent-health-fill{height:100%;border-radius:2px;transition:width .3s}
+.settlement-item{padding:4px 6px;margin:2px 0;color:#b0c8a0;cursor:pointer}
+.event-item{padding:3px 0;color:#666;font-size:11px;border-bottom:1px solid rgba(255,255,255,.03)}
+.event-item:first-child{color:#bbb}
+#deploy-panel{margin-top:10px;padding:8px;background:rgba(255,255,255,.03);border-radius:4px;border:1px solid #252530}
+#deploy-panel input,#deploy-panel select{width:100%;padding:5px 6px;margin:3px 0;background:#0a0a14;color:#e0e0e0;border:1px solid #333;border-radius:3px;font-family:inherit;font-size:12px}
+#deploy-panel button,.influence-btn{width:100%;padding:7px;margin:3px 0;background:#1a3a2a;color:#7fdbca;border:1px solid #2a5a4a;border-radius:3px;cursor:pointer;font-family:inherit;font-size:12px}
+#deploy-panel button:hover,.influence-btn:hover{background:#2a5a4a}
+.influence-btn{background:#1a1a2e;color:#99a;border-color:#333}
+.points-display{color:#ffd700;font-weight:bold;text-align:center;margin:6px 0;font-size:13px}
+.event-banner{position:absolute;top:50px;left:50%;transform:translateX(-50%);background:rgba(10,10,20,.95);border:2px solid #f0c040;border-radius:6px;padding:10px 24px;color:#f0c040;font-size:14px;font-weight:bold;z-index:20;pointer-events:none;opacity:0;transition:opacity .5s}
+.event-banner.visible{opacity:1}
 </style>
 </head>
 <body>
 <div id="loading"><h1>AGENTCRAFT</h1><p>Connecting to the living world...</p><div class="spinner"></div></div>
 <div id="reconnect"><h2>Disconnected</h2><p>Reconnecting...</p></div>
 <div id="game-container">
-  <canvas id="gameCanvas"></canvas>
-  <div id="topbar">
-    <span class="title">AGENTCRAFT</span>
-    <span class="stat"><span class="live-dot"></span>LIVE</span>
-    <span class="stat">Era: <span id="era-display">Wood</span></span>
-    <span class="stat">Pop: <span id="pop-display">0</span></span>
-    <span class="stat">Buildings: <span id="bld-display">0</span></span>
-    <span class="stat" id="time-icon-display"></span>
-    <span class="stat">Day <span id="day-display">1</span></span>
-    <span class="stat">Spectators: <span id="spec-display">0</span></span>
-    <span class="stat" id="fps-display" style="margin-left:auto;color:#555"></span>
-    <span class="stat" id="event-display" style="color:#f0c040"></span>
-  </div>
-  <div id="sidebar">
-    <canvas id="minimap" width="254" height="200"></canvas>
-    <div id="agent-detail" style="display:none;padding:8px;background:rgba(255,255,255,0.04);border-radius:4px;margin-bottom:8px;border:1px solid #252530">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span id="detail-name" style="font-weight:bold;color:#f0c040;font-size:13px"></span>
-        <span id="detail-close" style="cursor:pointer;color:#555;font-size:16px">&times;</span>
-      </div>
-      <div id="detail-info" style="font-size:11px;color:#999;margin-top:4px"></div>
-      <div id="detail-stats" style="font-size:11px;margin-top:4px"></div>
-      <div id="detail-inventory" style="font-size:11px;margin-top:4px"></div>
-      <div id="detail-relations" style="font-size:11px;margin-top:4px;color:#666"></div>
-    </div>
-    <div class="section-title">Active Agents</div>
-    <div id="agent-list"></div>
-    <div class="section-title">Settlements</div>
-    <div id="settlement-list"></div>
-    <div class="section-title">Clans</div>
-    <div id="clan-list"></div>
-    <div class="section-title">Event Feed</div>
-    <div id="event-feed"></div>
-    <div class="section-title">Spectator</div>
-    <div class="points-display">Points: <span id="points-display">0</span></div>
-    <div id="deploy-panel">
-      <input id="deploy-name" placeholder="Agent name" maxlength="16">
-      <select id="deploy-race"><option value="human">Human</option><option value="dwarf">Dwarf</option><option value="elf">Elf</option><option value="orc">Orc</option></select>
-      <select id="deploy-personality"><option value="analyst">Analyst</option><option value="optimist">Optimist</option><option value="dreamer">Dreamer</option><option value="overachiever">Overachiever</option><option value="aggressive">Aggressive</option><option value="chaotic">Chaotic</option><option value="grinder">Grinder</option><option value="lazy">Lazy</option></select>
-      <button id="deploy-btn">Deploy Agent</button>
-    </div>
-    <div style="margin-top:6px">
-      <button class="influence-btn" id="btn-food">Drop Food (10 pts)</button>
-      <button class="influence-btn" id="btn-rain">Trigger Rain (15 pts)</button>
-      <button class="influence-btn" id="btn-speed">Speed Boost (20 pts)</button>
-      <button class="influence-btn" id="btn-gift">Mystery Gift (25 pts)</button>
-    </div>
-  </div>
-  <div class="event-banner" id="event-banner"></div>
+<canvas id="gameCanvas"></canvas>
+<div id="topbar">
+<span class="title">AGENTCRAFT</span>
+<span class="stat"><span class="live-dot"></span>LIVE</span>
+<span class="stat">Era: <span id="era-display">Wood</span></span>
+<span class="stat">Pop: <span id="pop-display">0</span></span>
+<span class="stat">Buildings: <span id="bld-display">0</span></span>
+<span class="stat" id="time-icon-display"></span>
+<span class="stat">Day <span id="day-display">1</span></span>
+<span class="stat">Spectators: <span id="spec-display">0</span></span>
+<span class="stat" id="fps-display" style="margin-left:auto;color:#555"></span>
+<span class="stat" id="event-display" style="color:#f0c040"></span>
+</div>
+<div id="sidebar">
+<canvas id="minimap" width="254" height="200"></canvas>
+<div id="agent-detail" style="display:none;padding:8px;background:rgba(255,255,255,.04);border-radius:4px;margin-bottom:8px;border:1px solid #252530">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<span id="detail-name" style="font-weight:bold;color:#f0c040;font-size:13px"></span>
+<span id="detail-close" style="cursor:pointer;color:#555;font-size:16px">&times;</span>
+</div>
+<div id="detail-info" style="font-size:11px;color:#999;margin-top:4px"></div>
+<div id="detail-stats" style="font-size:11px;margin-top:4px"></div>
+<div id="detail-inventory" style="font-size:11px;margin-top:4px"></div>
+<div id="detail-relations" style="font-size:11px;margin-top:4px;color:#666"></div>
+</div>
+<div class="section-title">Active Agents</div>
+<div id="agent-list"></div>
+<div class="section-title">Settlements</div>
+<div id="settlement-list"></div>
+<div class="section-title">Clans</div>
+<div id="clan-list"></div>
+<div class="section-title">Event Feed</div>
+<div id="event-feed"></div>
+<div class="section-title">Spectator</div>
+<div class="points-display">Points: <span id="points-display">0</span></div>
+<div id="deploy-panel">
+<input id="deploy-name" placeholder="Agent name" maxlength="16">
+<select id="deploy-race"><option value="human">Human</option><option value="dwarf">Dwarf</option><option value="elf">Elf</option><option value="orc">Orc</option></select>
+<select id="deploy-personality"><option value="analyst">Analyst</option><option value="optimist">Optimist</option><option value="dreamer">Dreamer</option><option value="overachiever">Overachiever</option><option value="aggressive">Aggressive</option><option value="chaotic">Chaotic</option><option value="grinder">Grinder</option><option value="lazy">Lazy</option></select>
+<button id="deploy-btn">Deploy Agent</button>
+</div>
+<div style="margin-top:6px">
+<button class="influence-btn" id="btn-food">Drop Food (10 pts)</button>
+<button class="influence-btn" id="btn-rain">Trigger Rain (15 pts)</button>
+<button class="influence-btn" id="btn-speed">Speed Boost (20 pts)</button>
+<button class="influence-btn" id="btn-gift">Mystery Gift (25 pts)</button>
+</div>
+</div>
+<div class="event-banner" id="event-banner"></div>
 </div>
 
 <script>
-// ============================================================================
-// CLIENT — Noise & Terrain (identical to server, seed 42)
-// ============================================================================
-const WORLD_WIDTH = 200, WORLD_HEIGHT = 200, TILE_SIZE = 16;
+// === NOISE (identical to server) ===
+const WORLD_WIDTH=200,WORLD_HEIGHT=200,TILE_SIZE=16;
+function seededRandom(s){let v=s;return function(){v=(v*16807)%2147483647;return(v-1)/2147483646}}
+function hashCell(x,y,s){let h=s;h=((h<<5)-h+x)|0;h=((h<<5)-h+y)|0;h=((h<<5)-h+x*31)|0;h=((h<<5)-h+y*17)|0;return((h&0x7fffffff)%10000)/10000}
+const PERM=new Uint8Array(512);
+(function(){const r=seededRandom(42),p=new Uint8Array(256);for(let i=0;i<256;i++)p[i]=i;for(let i=255;i>0;i--){const j=Math.floor(r()*(i+1));[p[i],p[j]]=[p[j],p[i]]}for(let i=0;i<512;i++)PERM[i]=p[i&255]})();
+function grad2d(h,x,y){const v=h&3;return(v&1?x:-x)+(v&2?y:-y)}
+function noise2d(x,y){const X=Math.floor(x)&255,Y=Math.floor(y)&255,xf=x-Math.floor(x),yf=y-Math.floor(y),u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf),a=PERM[X]+Y,b=PERM[X+1]+Y;return .5+.5*(grad2d(PERM[a],xf,yf)*(1-u)*(1-v)+grad2d(PERM[b],xf-1,yf)*u*(1-v)+grad2d(PERM[a+1],xf,yf-1)*(1-u)*v+grad2d(PERM[b+1],xf-1,yf-1)*u*v)}
+function fbm(x,y,o,l,g){let s=0,a=1,f=1,m=0;for(let i=0;i<o;i++){s+=noise2d(x*f,y*f)*a;m+=a;a*=g;f*=l}return s/m}
+function getBiome(e,m){if(e<.22)return'deep_water';if(e<.3)return'shallow_water';if(e<.33)return'beach';if(e>.85)return'snow';if(e>.75)return'mountain';if(e>.65)return'mountain_base';if(m<.25&&e<.55)return'desert';if(m>.7&&e<.4)return'swamp';if(m>.6)return'dense_forest';if(m>.4)return'forest';return'grass'}
 
-function seededRandom(seed) {
-  let s = seed;
-  return function() { s = (s * 16807 + 0) % 2147483647; return (s - 1) / 2147483646; };
-}
-function hashCell(x, y, seed) {
-  let h = seed;
-  h = ((h << 5) - h + x) | 0; h = ((h << 5) - h + y) | 0;
-  h = ((h << 5) - h + x * 31) | 0; h = ((h << 5) - h + y * 17) | 0;
-  return ((h & 0x7fffffff) % 10000) / 10000;
-}
-const PERM = new Uint8Array(512);
-(function() {
-  const rng = seededRandom(42);
-  const p = new Uint8Array(256);
-  for (let i = 0; i < 256; i++) p[i] = i;
-  for (let i = 255; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; }
-  for (let i = 0; i < 512; i++) PERM[i] = p[i & 255];
-})();
-function grad2d(hash, x, y) { const h = hash & 3; return (h & 1 ? x : -x) + (h & 2 ? y : -y); }
-function noise2d(x, y) {
-  const X = Math.floor(x) & 255, Y = Math.floor(y) & 255;
-  const xf = x - Math.floor(x), yf = y - Math.floor(y);
-  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
-  const a = PERM[X] + Y, b = PERM[X + 1] + Y;
-  return 0.5 + 0.5 * (grad2d(PERM[a], xf, yf) * (1-u) * (1-v) + grad2d(PERM[b], xf-1, yf) * u * (1-v) + grad2d(PERM[a+1], xf, yf-1) * (1-u) * v + grad2d(PERM[b+1], xf-1, yf-1) * u * v);
-}
-function fbm(x, y, oct, lac, gain) {
-  let sum = 0, amp = 1, freq = 1, max = 0;
-  for (let i = 0; i < oct; i++) { sum += noise2d(x*freq, y*freq)*amp; max += amp; amp *= gain; freq *= lac; }
-  return sum / max;
-}
-function getBiome(e, m) {
-  if (e < 0.22) return 'deep_water'; if (e < 0.30) return 'shallow_water'; if (e < 0.33) return 'beach';
-  if (e > 0.85) return 'snow'; if (e > 0.75) return 'mountain'; if (e > 0.65) return 'mountain_base';
-  if (m < 0.25 && e < 0.55) return 'desert'; if (m > 0.7 && e < 0.4) return 'swamp';
-  if (m > 0.6) return 'dense_forest'; if (m > 0.4) return 'forest'; return 'grass';
-}
-
-// Lush biome colors — subtle checkerboard (close shades)
-const BIOME_COLORS = {
-  deep_water:    ['#2858a8', '#2550a0'],
-  shallow_water: ['#3872be', '#346ab6'],
-  beach:         ['#d4b896', '#ccb088'],
-  grass:         ['#4a9040', '#439038'],
-  forest:        ['#3a7a34', '#35752e'],
-  dense_forest:  ['#2e6a28', '#2a6424'],
-  desert:        ['#d4b896', '#ccb088'],
-  mountain_base: ['#8a8078', '#847a72'],
-  mountain:      ['#807470', '#7a6e6a'],
-  snow:          ['#e4eef4', '#e0eaf0'],
-  swamp:         ['#3a5e30', '#34582a']
+// === TERRAIN DATA ===
+// Use FLAT colors per biome - NO checkerboard (that causes diagonal stripes)
+const BIOME_COLOR={
+  deep_water:'#2858a8',shallow_water:'#3872be',beach:'#d4b896',
+  grass:'#459035',forest:'#3a7832',dense_forest:'#2e6828',
+  desert:'#d0b088',mountain_base:'#847a72',mountain:'#7a6e68',
+  snow:'#e4eef4',swamp:'#385828'
 };
-const MINIMAP_COLORS = {
-  deep_water: '#1a3a88', shallow_water: '#2a5aaa', beach: '#c4a878', grass: '#4a8f3f',
-  forest: '#2d6b28', dense_forest: '#245a20', desert: '#c4a878', mountain_base: '#7a7068',
-  mountain: '#6a6058', snow: '#dde8ee', swamp: '#2e4e22'
-};
+const terrainData=[];
+for(let y=0;y<WORLD_HEIGHT;y++){terrainData[y]=[];for(let x=0;x<WORLD_WIDTH;x++){
+  const nx=x/WORLD_WIDTH,ny=y/WORLD_HEIGHT;
+  const elevation=fbm(nx*4+.5,ny*4+.5,6,2,.5);
+  const moisture=fbm(nx*3+10.7,ny*3+10.7,5,2,.5);
+  const biome=getBiome(elevation,moisture);
+  const h=hashCell(x,y,42);
+  let hasTree=false,treeType='oak';
+  if(biome==='dense_forest')hasTree=h<.8;
+  else if(biome==='forest')hasTree=h<.6;
+  else if(biome==='grass')hasTree=h<.1;
+  else if(biome==='mountain_base')hasTree=h<.2;
+  else if(biome==='swamp')hasTree=h<.3;
+  if(hasTree){const h2=hashCell(x+1000,y+1000,42);treeType=h2<.5?'oak':h2<.8?'pine':'birch';if(biome==='mountain_base')treeType='pine';if(biome==='swamp')treeType='oak'}
+  let hasRock=false;
+  if(biome==='mountain')hasRock=h<.5;
+  else if(biome==='mountain_base')hasRock=hashCell(x+500,y+500,42)<.3;
+  else if(biome==='grass')hasRock=hashCell(x+500,y+500,42)<.05;
+  terrainData[y][x]={type:biome,hasTree,treeType,hasRock,stump:false};
+}}
 
-// Generate terrain data locally (matches server exactly)
-const terrainData = [];
-for (let y = 0; y < WORLD_HEIGHT; y++) {
-  terrainData[y] = [];
-  for (let x = 0; x < WORLD_WIDTH; x++) {
-    const nx = x / WORLD_WIDTH, ny = y / WORLD_HEIGHT;
-    const elevation = fbm(nx*4+0.5, ny*4+0.5, 6, 2.0, 0.5);
-    const moisture = fbm(nx*3+10.7, ny*3+10.7, 5, 2.0, 0.5);
-    const biome = getBiome(elevation, moisture);
-    const h = hashCell(x, y, 42);
-    let hasTree = false, treeType = 'oak';
-    if (biome === 'dense_forest') hasTree = h < 0.8;
-    else if (biome === 'forest') hasTree = h < 0.6;
-    else if (biome === 'grass') hasTree = h < 0.1;
-    else if (biome === 'mountain_base') hasTree = h < 0.2;
-    else if (biome === 'swamp') hasTree = h < 0.3;
-    if (hasTree) {
-      const h2 = hashCell(x+1000, y+1000, 42);
-      treeType = h2 < 0.5 ? 'oak' : h2 < 0.8 ? 'pine' : 'birch';
-      if (biome === 'mountain_base') treeType = 'pine';
-      if (biome === 'swamp') treeType = 'oak';
-    }
-    let hasRock = false;
-    if (biome === 'mountain') hasRock = h < 0.5;
-    else if (biome === 'mountain_base') hasRock = hashCell(x+500, y+500, 42) < 0.3;
-    else if (biome === 'grass') hasRock = hashCell(x+500, y+500, 42) < 0.05;
-    terrainData[y][x] = { type: biome, elevation, hasTree, treeType, hasRock, stump: false, renderTree: false };
-  }
-}
-// Thin out tree rendering — skip trees whose neighbors already have trees to avoid stripe pattern
-// Server still tracks all trees for gameplay, this is visual only
-for (let y = 0; y < WORLD_HEIGHT; y++) {
-  for (let x = 0; x < WORLD_WIDTH; x++) {
-    const c = terrainData[y][x];
-    if (!c.hasTree) continue;
-    // In dense areas, only render ~40% of trees; in sparse areas render all
-    const h = hashCell(x + 777, y + 777, 42);
-    if (c.type === 'dense_forest') {
-      // Only render if no rendered tree in immediate neighbors
-      const hasRenderedNeighbor =
-        (x > 0 && terrainData[y][x-1].renderTree) ||
-        (y > 0 && terrainData[y-1][x].renderTree) ||
-        (x > 0 && y > 0 && terrainData[y-1][x-1].renderTree);
-      if (hasRenderedNeighbor && h < 0.55) continue;
-      c.renderTree = true;
-    } else if (c.type === 'forest') {
-      const hasRenderedNeighbor =
-        (x > 0 && terrainData[y][x-1].renderTree) ||
-        (y > 0 && terrainData[y-1][x].renderTree);
-      if (hasRenderedNeighbor && h < 0.4) continue;
-      c.renderTree = true;
-    } else {
-      c.renderTree = true;
-    }
+// Visual tree thinning: every other tree in dense areas
+for(let y=0;y<WORLD_HEIGHT;y++)for(let x=0;x<WORLD_WIDTH;x++){
+  const c=terrainData[y][x];
+  if(!c.hasTree){c.drawTree=false;continue}
+  if(c.type==='dense_forest'){
+    // Only draw ~1 in 3 trees
+    c.drawTree=((x+y*3)%3===0)||hashCell(x+777,y+777,42)>.7;
+  }else if(c.type==='forest'){
+    c.drawTree=((x+y*2)%2===0)||hashCell(x+777,y+777,42)>.6;
+  }else{
+    c.drawTree=true;
   }
 }
 </script>
 <script>
-// ============================================================================
-// Canvas, Camera, Terrain Cache
-// ============================================================================
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const minimapCanvas = document.getElementById('minimap');
-const minimapCtx = minimapCanvas.getContext('2d');
+// === CANVAS, CAMERA, TERRAIN CACHE ===
+const canvas=document.getElementById('gameCanvas'),ctx=canvas.getContext('2d');
+const minimapCanvas=document.getElementById('minimap'),minimapCtx=minimapCanvas.getContext('2d');
+let W=window.innerWidth,H=window.innerHeight;
+canvas.width=W;canvas.height=H;
+let camX=WORLD_WIDTH*TILE_SIZE/2-W/2,camY=WORLD_HEIGHT*TILE_SIZE/2-H/2,zoom=1;
+let dragging=false,dragSX=0,dragSY=0,dragCX=0,dragCY=0,followAgent=null;
 
-let W = window.innerWidth, H = window.innerHeight;
-canvas.width = W; canvas.height = H;
+const terrainCache=document.createElement('canvas');
+terrainCache.width=WORLD_WIDTH*TILE_SIZE;terrainCache.height=WORLD_HEIGHT*TILE_SIZE;
+const tCtx=terrainCache.getContext('2d');
+let terrainDirty=true;
 
-let camX = WORLD_WIDTH * TILE_SIZE / 2 - W / 2;
-let camY = WORLD_HEIGHT * TILE_SIZE / 2 - H / 2;
-let zoom = 1.0;
-let dragging = false, dragStartX = 0, dragStartY = 0, dragCamX = 0, dragCamY = 0;
-let followAgent = null;
-
-// Terrain cache
-const terrainCache = document.createElement('canvas');
-terrainCache.width = WORLD_WIDTH * TILE_SIZE;
-terrainCache.height = WORLD_HEIGHT * TILE_SIZE;
-const tCtx = terrainCache.getContext('2d');
-let terrainDirty = true;
-
-function renderTerrainCache() {
-  for (let y = 0; y < WORLD_HEIGHT; y++) {
-    for (let x = 0; x < WORLD_WIDTH; x++) {
-      const cell = terrainData[y][x];
-      const colors = BIOME_COLORS[cell.type] || BIOME_COLORS.grass;
-      tCtx.fillStyle = (x + y) % 2 === 0 ? colors[0] : colors[1];
-      tCtx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-
-      // Darker patches on grass for variety
-      if ((cell.type === 'grass' || cell.type === 'forest') && hashCell(x+300, y+300, 42) < 0.15) {
-        tCtx.fillStyle = 'rgba(0,0,0,0.06)';
-        tCtx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-      }
-      // Swamp brown patches
-      if (cell.type === 'swamp' && hashCell(x+400, y+400, 42) < 0.2) {
-        tCtx.fillStyle = 'rgba(80,50,20,0.2)';
-        tCtx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-      }
-      // Ground details: flowers, mushrooms on grass
-      if (cell.type === 'grass' && !cell.hasTree && !cell.hasRock) {
-        const fh = hashCell(x+200, y+200, 42);
-        if (fh < 0.04) {
-          tCtx.fillStyle = '#ee6688';
-          tCtx.fillRect(x*TILE_SIZE+5, y*TILE_SIZE+6, 2, 2);
-          tCtx.fillRect(x*TILE_SIZE+9, y*TILE_SIZE+10, 2, 2);
-        } else if (fh < 0.07) {
-          tCtx.fillStyle = '#eedd44';
-          tCtx.fillRect(x*TILE_SIZE+7, y*TILE_SIZE+8, 2, 2);
-        }
-      }
+function renderTerrainCache(){
+  for(let y=0;y<WORLD_HEIGHT;y++)for(let x=0;x<WORLD_WIDTH;x++){
+    const c=terrainData[y][x];
+    // Flat color per cell — use noise-based subtle variation instead of checkerboard
+    const base=BIOME_COLOR[c.type]||'#459035';
+    tCtx.fillStyle=base;
+    tCtx.fillRect(x*TILE_SIZE,y*TILE_SIZE,TILE_SIZE,TILE_SIZE);
+    // Subtle variation using hash — NOT checkerboard
+    const v=hashCell(x+300,y+300,42);
+    if(v<.3){tCtx.fillStyle='rgba(0,0,0,0.04)';tCtx.fillRect(x*TILE_SIZE,y*TILE_SIZE,TILE_SIZE,TILE_SIZE)}
+    else if(v>.85){tCtx.fillStyle='rgba(255,255,255,0.03)';tCtx.fillRect(x*TILE_SIZE,y*TILE_SIZE,TILE_SIZE,TILE_SIZE)}
+    // Small grass details
+    if(c.type==='grass'&&!c.hasTree&&!c.hasRock){
+      const fh=hashCell(x+200,y+200,42);
+      if(fh<.03){tCtx.fillStyle='#5aa848';tCtx.fillRect(x*TILE_SIZE+4,y*TILE_SIZE+4,2,2);tCtx.fillRect(x*TILE_SIZE+10,y*TILE_SIZE+9,2,2)}
+      if(fh>.97){tCtx.fillStyle='#ee7788';tCtx.fillRect(x*TILE_SIZE+7,y*TILE_SIZE+7,2,2)}
     }
   }
-  terrainDirty = false;
+  terrainDirty=false;
 }
 renderTerrainCache();
 
 // Minimap
-const minimapCache = document.createElement('canvas');
-minimapCache.width = 254; minimapCache.height = 200;
-const mmCtx = minimapCache.getContext('2d');
-function renderMinimapBase() {
-  const mw = 254, mh = 200;
-  const sx = mw / WORLD_WIDTH, sy = mh / WORLD_HEIGHT;
-  for (let y = 0; y < WORLD_HEIGHT; y++) {
-    for (let x = 0; x < WORLD_WIDTH; x++) {
-      mmCtx.fillStyle = MINIMAP_COLORS[terrainData[y][x].type] || '#4a8f3f';
-      mmCtx.fillRect(x * sx, y * sy, Math.ceil(sx), Math.ceil(sy));
-    }
-  }
-}
-renderMinimapBase();
+const mmCache=document.createElement('canvas');mmCache.width=254;mmCache.height=200;
+const mmCtx=mmCache.getContext('2d');
+(function(){const sx=254/WORLD_WIDTH,sy=200/WORLD_HEIGHT;
+for(let y=0;y<WORLD_HEIGHT;y++)for(let x=0;x<WORLD_WIDTH;x++){
+  mmCtx.fillStyle=BIOME_COLOR[terrainData[y][x].type]||'#459035';
+  mmCtx.fillRect(x*sx,y*sy,Math.ceil(sx),Math.ceil(sy));
+}})();
 
 // State
-let serverState = null;
-let particles = [];
-let floatingTexts = [];
-let selectedAgent = null;
-let bannerTimer = 0;
-let lastBannerText = '';
-const interpPos = {};
-let fpsCounter = 0, fpsTime = 0, fpsDisplay = 0;
-</script>
-<script>
-// ============================================================================
-// Drawing — Trees, Rocks, Stumps
-// ============================================================================
-function drawTree(x, y, type, wobble) {
-  ctx.save();
-  ctx.translate(x, y);
-  if (wobble) ctx.rotate(wobble);
+let serverState=null,particles=[],floatingTexts=[],selectedAgent=null;
+let bannerTimer=0,lastBannerText='';
+const interpPos={};
+let fpsC=0,fpsT=0,fpsD=0;
+const RACE_COLORS={human:'#3355aa',dwarf:'#aa6633',elf:'#33aa55',orc:'#aa3333'};
 
-  if (type === 'pine') {
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.beginPath(); ctx.ellipse(3, 3, 7, 4, 0, 0, Math.PI*2); ctx.fill();
-    // Trunk
-    ctx.fillStyle = '#5C3A1E'; ctx.fillRect(-1, -3, 3, 9);
-    // Lower tier
-    ctx.fillStyle = '#1a5c1a';
-    ctx.beginPath(); ctx.moveTo(0, -20); ctx.lineTo(-7, -5); ctx.lineTo(7, -5); ctx.closePath(); ctx.fill();
-    // Upper tier
-    ctx.fillStyle = '#1f6e1f';
-    ctx.beginPath(); ctx.moveTo(0, -26); ctx.lineTo(-5, -14); ctx.lineTo(5, -14); ctx.closePath(); ctx.fill();
-    // Highlight
-    ctx.fillStyle = '#2a882a';
-    ctx.beginPath(); ctx.moveTo(-1, -24); ctx.lineTo(-4, -16); ctx.lineTo(1, -16); ctx.closePath(); ctx.fill();
-  } else if (type === 'birch') {
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.beginPath(); ctx.ellipse(3, 3, 9, 4, 0, 0, Math.PI*2); ctx.fill();
-    // Trunk (white birch)
-    ctx.fillStyle = '#d4c4a8'; ctx.fillRect(-1, -4, 3, 10);
-    ctx.fillStyle = '#6a5a40'; ctx.fillRect(0, -1, 1, 1); ctx.fillRect(0, 2, 1, 1);
-    // Canopy
-    ctx.fillStyle = '#3aaa3a';
-    ctx.beginPath(); ctx.arc(0, -13, 10, 0, Math.PI*2); ctx.fill();
-    // Highlight
-    ctx.fillStyle = '#50cc50';
-    ctx.beginPath(); ctx.arc(-2, -15, 6, 0, Math.PI*2); ctx.fill();
-    // Light dot
-    ctx.fillStyle = '#70e870';
-    ctx.beginPath(); ctx.arc(-4, -17, 3, 0, Math.PI*2); ctx.fill();
-  } else {
-    // Oak (default) — round tree
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.beginPath(); ctx.ellipse(3, 3, 10, 5, 0, 0, Math.PI*2); ctx.fill();
-    // Trunk
-    ctx.fillStyle = '#5C3A1E'; ctx.fillRect(-2, -4, 4, 10);
-    // Main canopy
-    ctx.fillStyle = '#2d8b2d';
-    ctx.beginPath(); ctx.arc(0, -13, 11, 0, Math.PI*2); ctx.fill();
-    // Highlight circle
-    ctx.fillStyle = '#3caf3c';
-    ctx.beginPath(); ctx.arc(-2, -15, 7, 0, Math.PI*2); ctx.fill();
-    // Specular light dot
-    ctx.fillStyle = '#5ccf5c';
-    ctx.beginPath(); ctx.arc(-4, -18, 3, 0, Math.PI*2); ctx.fill();
+// === DRAW TREE ===
+function drawTree(x,y,type,wobble){
+  ctx.save();ctx.translate(x,y);
+  if(wobble)ctx.rotate(wobble);
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.22)';
+  ctx.beginPath();ctx.ellipse(2,2,9,4,0,0,Math.PI*2);ctx.fill();
+  if(type==='pine'){
+    ctx.fillStyle='#4a3520';ctx.fillRect(-1,-2,3,8);
+    ctx.fillStyle='#1e6e1e';ctx.beginPath();ctx.moveTo(0,-22);ctx.lineTo(-8,-4);ctx.lineTo(8,-4);ctx.fill();
+    ctx.fillStyle='#258a25';ctx.beginPath();ctx.moveTo(0,-18);ctx.lineTo(-5,-8);ctx.lineTo(5,-8);ctx.fill();
+  }else if(type==='birch'){
+    ctx.fillStyle='#ccc0a8';ctx.fillRect(-1,-3,3,9);
+    ctx.fillStyle='#888';ctx.fillRect(0,0,1,1);ctx.fillRect(-1,3,1,1);
+    ctx.fillStyle='#38a838';ctx.beginPath();ctx.arc(0,-12,9,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#48c848';ctx.beginPath();ctx.arc(-2,-14,6,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#60e060';ctx.beginPath();ctx.arc(-3,-16,3,0,Math.PI*2);ctx.fill();
+  }else{
+    ctx.fillStyle='#4a3520';ctx.fillRect(-2,-3,4,9);
+    ctx.fillStyle='#2a8a2a';ctx.beginPath();ctx.arc(0,-12,10,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#35a835';ctx.beginPath();ctx.arc(-2,-14,7,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#50c850';ctx.beginPath();ctx.arc(-3,-16,3,0,Math.PI*2);ctx.fill();
   }
   ctx.restore();
 }
-
-function drawStump(x, y) {
-  ctx.fillStyle = 'rgba(0,0,0,0.12)';
-  ctx.beginPath(); ctx.ellipse(x+2, y+2, 6, 3, 0, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#5C3A1E'; ctx.fillRect(x-4, y-4, 8, 6);
-  ctx.fillStyle = '#7a5a2a'; ctx.fillRect(x-3, y-4, 6, 2);
-  // Rings
-  ctx.fillStyle = '#8a6a3a'; ctx.fillRect(x-2, y-3, 4, 1);
+function drawStump(x,y){
+  ctx.fillStyle='rgba(0,0,0,0.1)';ctx.beginPath();ctx.ellipse(x+1,y+1,5,2,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#4a3520';ctx.fillRect(x-3,y-3,6,4);
+  ctx.fillStyle='#6a5530';ctx.fillRect(x-2,y-3,4,1);
 }
-
-function drawRock(x, y) {
-  // Shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.15)';
-  ctx.beginPath(); ctx.ellipse(x+2, y+3, 8, 4, 0, 0, Math.PI*2); ctx.fill();
-  // Main rock body
-  ctx.fillStyle = '#7a7068';
-  ctx.beginPath(); ctx.moveTo(x-7,y+4); ctx.lineTo(x-6,y-5); ctx.lineTo(x+1,y-7); ctx.lineTo(x+8,y-2); ctx.lineTo(x+6,y+4); ctx.closePath(); ctx.fill();
-  // Highlight face
-  ctx.fillStyle = '#9a9088';
-  ctx.beginPath(); ctx.moveTo(x-4,y-3); ctx.lineTo(x+1,y-6); ctx.lineTo(x+6,y-1); ctx.lineTo(x+1,y+1); ctx.closePath(); ctx.fill();
-  // Specular
-  ctx.fillStyle = '#aaa89a';
-  ctx.fillRect(x-1, y-5, 3, 2);
+function drawRock(x,y){
+  ctx.fillStyle='rgba(0,0,0,0.12)';ctx.beginPath();ctx.ellipse(x+1,y+2,7,3,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#6a6660';ctx.beginPath();ctx.moveTo(x-6,y+3);ctx.lineTo(x-4,y-4);ctx.lineTo(x+2,y-5);ctx.lineTo(x+7,y-1);ctx.lineTo(x+5,y+3);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#8a8880';ctx.beginPath();ctx.moveTo(x-3,y-2);ctx.lineTo(x+1,y-4);ctx.lineTo(x+5,y);ctx.lineTo(x,y);ctx.closePath();ctx.fill();
 }
 </script>
 <script>
-// ============================================================================
-// Drawing — Buildings
-// ============================================================================
-function drawBuilding(bld, rx, ry) {
-  ctx.save();
-  ctx.translate(rx, ry);
-  const pct = bld.complete ? 1 : bld.progress / bld.constructionTime;
-
-  if (!bld.complete) {
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.12)';
-    ctx.beginPath(); ctx.ellipse(20, 36, 22, 6, 0, 0, Math.PI*2); ctx.fill();
-    ctx.globalAlpha = 0.4 + pct * 0.6;
-    if (pct <= 0.25) {
-      ctx.fillStyle = '#3d2b1f'; ctx.fillRect(-2, 28, 44, 4);
-    } else if (pct <= 0.5) {
-      ctx.fillStyle = '#3d2b1f'; ctx.fillRect(-2, 28, 44, 4);
-      ctx.fillStyle = '#8B6914'; ctx.fillRect(0, 16, 40, 16);
-      ctx.strokeStyle = '#5C3A1E'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(-2, 6); ctx.lineTo(-2, 32); ctx.moveTo(42, 6); ctx.lineTo(42, 32); ctx.stroke();
-    } else if (pct <= 0.75) {
-      ctx.fillStyle = '#3d2b1f'; ctx.fillRect(-2, 28, 44, 4);
-      ctx.fillStyle = '#8B6914'; ctx.fillRect(0, 4, 40, 28);
-      ctx.fillStyle = '#2c1a00'; ctx.fillRect(16, 16, 8, 16);
-      ctx.strokeStyle = '#5C3A1E'; ctx.lineWidth = 1;
-      ctx.strokeRect(-3, 2, 46, 30);
-      ctx.beginPath(); ctx.moveTo(20, 2); ctx.lineTo(20, -4); ctx.stroke();
-    } else {
-      ctx.fillStyle = '#3d2b1f'; ctx.fillRect(-2, 28, 44, 4);
-      ctx.fillStyle = '#8B6914'; ctx.fillRect(0, 4, 40, 28);
-      ctx.fillStyle = '#2c1a00'; ctx.fillRect(16, 16, 8, 16);
-      const rp = (pct - 0.75) / 0.25;
-      ctx.fillStyle = '#654321';
-      ctx.beginPath(); ctx.moveTo(-2, 4); ctx.lineTo(20, 4 - 12*rp); ctx.lineTo(42, 4); ctx.fill();
-      ctx.globalAlpha *= (1 - rp * 0.8);
-      ctx.strokeStyle = '#5C3A1E'; ctx.lineWidth = 1; ctx.strokeRect(-3, 2, 46, 30);
-    }
-    ctx.globalAlpha = 1; ctx.restore(); return;
+// === DRAW BUILDING ===
+function drawBuilding(bld,rx,ry){
+  ctx.save();ctx.translate(rx,ry);
+  const pct=bld.complete?1:bld.progress/bld.constructionTime;
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.15)';ctx.beginPath();ctx.ellipse(16,32,20,6,0,0,Math.PI*2);ctx.fill();
+  if(!bld.complete){
+    ctx.globalAlpha=.4+pct*.6;
+    ctx.fillStyle='#5a4a30';ctx.fillRect(0,24,32,4);// foundation
+    if(pct>.25){ctx.fillStyle='#8a7a50';ctx.fillRect(0,12,28,16)}
+    if(pct>.5){ctx.fillStyle='#2c1a00';ctx.fillRect(10,16,6,12);ctx.strokeStyle='#6a5a30';ctx.lineWidth=1;ctx.strokeRect(-2,8,34,22)}
+    if(pct>.75){ctx.fillStyle='#654321';ctx.beginPath();ctx.moveTo(-2,10);ctx.lineTo(16,-2);ctx.lineTo(34,10);ctx.fill()}
+    ctx.globalAlpha=1;ctx.restore();return;
   }
-
-  const t = bld.type;
-  // Shadow for all buildings
-  ctx.fillStyle = 'rgba(0,0,0,0.12)';
-  ctx.beginPath(); ctx.ellipse(20, 36, 24, 7, 0, 0, Math.PI*2); ctx.fill();
-
-  if (t === 'Campfire') {
-    ctx.fillStyle = '#5a3a1a';
-    for (let i = 0; i < 6; i++) { const a = (i/6)*Math.PI*2; ctx.fillRect(8+Math.cos(a)*7-1, 8+Math.sin(a)*7-1, 3, 3); }
-    const flicker = Math.sin(performance.now()*0.008) * 0.3 + 0.7;
-    ctx.fillStyle = 'rgba(255,100,0,' + flicker.toFixed(2) + ')';
-    ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(4, 10); ctx.lineTo(12, 10); ctx.fill();
-    ctx.fillStyle = 'rgba(255,180,0,' + (flicker*0.8).toFixed(2) + ')';
-    ctx.beginPath(); ctx.moveTo(8, 3); ctx.lineTo(5, 9); ctx.lineTo(11, 9); ctx.fill();
-    // Glow
-    ctx.fillStyle = 'rgba(255,150,50,0.08)';
-    ctx.beginPath(); ctx.arc(8, 8, 20, 0, Math.PI*2); ctx.fill();
-  } else if (t === 'Wood Hut') {
-    // Foundation
-    ctx.fillStyle = '#3d2b1f'; ctx.fillRect(-2, 30, 44, 4);
-    // Front wall - wood planks
-    ctx.fillStyle = '#A0782C'; ctx.fillRect(0, 6, 34, 26);
-    for (let i = 0; i < 4; i++) { ctx.fillStyle = i%2 ? '#8B6914' : '#A0782C'; ctx.fillRect(0, 6+i*6.5, 34, 6); }
-    // Right side wall (3D depth)
-    ctx.fillStyle = '#6e5010'; ctx.fillRect(34, 6, 7, 26);
-    // Roof
-    ctx.fillStyle = '#8B0000';
-    ctx.beginPath(); ctx.moveTo(-4, 6); ctx.lineTo(20, -8); ctx.lineTo(44, 6); ctx.fill();
-    ctx.fillStyle = '#6a0000';
-    ctx.beginPath(); ctx.moveTo(20, -8); ctx.lineTo(44, 6); ctx.lineTo(44+4, 8); ctx.lineTo(20+4, -6); ctx.fill();
-    // Door
-    ctx.fillStyle = '#2c1a00'; ctx.fillRect(12, 18, 8, 14);
-    // Window
-    ctx.fillStyle = '#87CEEB'; ctx.fillRect(24, 14, 5, 5);
-  } else if (t === 'Log Cabin') {
-    ctx.fillStyle = '#3d2b1f'; ctx.fillRect(-2, 32, 52, 4);
-    ctx.fillStyle = '#8B6914'; ctx.fillRect(0, 6, 40, 28);
-    for (let i = 0; i < 5; i++) { ctx.fillStyle = i%2 ? '#7a5810' : '#8B6914'; ctx.fillRect(0, 6+i*5.6, 40, 5); }
-    ctx.fillStyle = '#5a4008'; ctx.fillRect(40, 6, 8, 28);
-    ctx.fillStyle = '#654321';
-    ctx.beginPath(); ctx.moveTo(-4, 6); ctx.lineTo(24, -10); ctx.lineTo(52, 6); ctx.fill();
-    ctx.fillStyle = '#4a3018';
-    ctx.beginPath(); ctx.moveTo(24, -10); ctx.lineTo(52, 6); ctx.lineTo(56, 8); ctx.lineTo(28, -8); ctx.fill();
-    ctx.fillStyle = '#2c1a00'; ctx.fillRect(14, 18, 10, 16);
-    ctx.fillStyle = '#87CEEB'; ctx.fillRect(3, 12, 5, 5); ctx.fillRect(32, 12, 5, 5);
-  } else if (t === 'Farm') {
-    ctx.fillStyle = '#3d2b1f'; ctx.fillRect(-2, 28, 52, 3);
-    ctx.fillStyle = '#8B6914'; ctx.fillRect(0, 8, 48, 22);
-    ctx.fillStyle = '#6e5010'; ctx.fillRect(48, 8, 6, 22);
-    ctx.fillStyle = '#aa8840';
-    ctx.beginPath(); ctx.moveTo(-2, 8); ctx.lineTo(26, -2); ctx.lineTo(56, 8); ctx.fill();
-    ctx.fillStyle = '#2c1a00'; ctx.fillRect(18, 16, 8, 14);
-    // Fields
-    for (let i = 0; i < 4; i++) { ctx.fillStyle = '#5a3a1a'; ctx.fillRect(-6, 34+i*5, 56, 2); ctx.fillStyle = '#4a8a2a'; for (let j = 0; j < 6; j++) ctx.fillRect(-4+j*9, 32+i*5, 4, 3); }
-    // Fence
-    ctx.strokeStyle = '#8a7050'; ctx.lineWidth = 1;
-    ctx.strokeRect(-8, 32, 62, 22);
-  } else if (t === 'Lumber Mill') {
-    ctx.fillStyle = '#3d2b1f'; ctx.fillRect(-2, 32, 56, 4);
-    ctx.fillStyle = '#6e5010'; ctx.fillRect(0, 6, 44, 28);
-    ctx.fillStyle = '#4e3808'; ctx.fillRect(44, 6, 8, 28);
-    ctx.fillStyle = '#654321';
-    ctx.beginPath(); ctx.moveTo(-4, 6); ctx.lineTo(26, -6); ctx.lineTo(56, 6); ctx.fill();
-    // Saw blade
-    ctx.fillStyle = '#888'; ctx.beginPath(); ctx.arc(22, 18, 6, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#aaa'; ctx.beginPath(); ctx.arc(22, 18, 4, 0, Math.PI*2); ctx.fill();
-    // Log pile
-    ctx.fillStyle = '#5C3A1E';
-    ctx.fillRect(48, 20, 8, 4); ctx.fillRect(49, 16, 6, 4); ctx.fillRect(50, 12, 4, 4);
-  } else if (t === 'Stone House') {
-    ctx.fillStyle = '#3d2b1f'; ctx.fillRect(-2, 34, 50, 4);
-    // Stone block pattern
-    ctx.fillStyle = '#808080'; ctx.fillRect(0, 6, 40, 30);
-    for (let row = 0; row < 5; row++) {
-      for (let col = 0; col < 3; col++) {
-        const ox = col * 13 + (row%2)*6;
-        ctx.fillStyle = (row+col)%2 ? '#909090' : '#7a7a7a';
-        ctx.fillRect(ox, 6+row*6, 12, 5);
-      }
-      ctx.fillStyle = '#606060'; ctx.fillRect(0, 6+row*6+5, 40, 1);
-    }
-    ctx.fillStyle = '#5a5a5a'; ctx.fillRect(40, 6, 7, 30);
-    ctx.fillStyle = '#4a4a4a';
-    ctx.beginPath(); ctx.moveTo(-4, 6); ctx.lineTo(22, -8); ctx.lineTo(50, 6); ctx.fill();
-    ctx.fillStyle = '#3a3a3a';
-    ctx.beginPath(); ctx.moveTo(22, -8); ctx.lineTo(50, 6); ctx.lineTo(54, 8); ctx.lineTo(26, -6); ctx.fill();
-    ctx.fillStyle = '#2c1a00'; ctx.fillRect(14, 20, 8, 16);
-    ctx.fillStyle = '#87CEEB'; ctx.fillRect(3, 12, 5, 5); ctx.fillRect(30, 12, 5, 5);
-  } else if (t === 'Blacksmith') {
-    ctx.fillStyle = '#3d2b1f'; ctx.fillRect(-2, 32, 50, 4);
-    ctx.fillStyle = '#606060'; ctx.fillRect(0, 6, 38, 28);
-    ctx.fillStyle = '#4a4a4a'; ctx.fillRect(38, 6, 7, 28);
-    ctx.fillStyle = '#4a4a4a';
-    ctx.beginPath(); ctx.moveTo(-2, 6); ctx.lineTo(22, -4); ctx.lineTo(48, 6); ctx.fill();
-    // Chimney
-    ctx.fillStyle = '#505050'; ctx.fillRect(32, -8, 6, 14);
-    // Forge glow
-    ctx.fillStyle = 'rgba(255,100,0,0.4)'; ctx.fillRect(3, 22, 8, 8);
-    ctx.fillStyle = '#ff6622'; ctx.fillRect(4, 24, 6, 5);
-    // Anvil
-    ctx.fillStyle = '#555'; ctx.fillRect(22, 22, 8, 4); ctx.fillRect(24, 18, 4, 4);
-    ctx.fillStyle = '#2c1a00'; ctx.fillRect(14, 18, 6, 14);
-  } else if (t === 'Watchtower') {
-    ctx.fillStyle = '#3d2b1f'; ctx.fillRect(6, 44, 20, 3);
-    ctx.fillStyle = '#8B6914'; ctx.fillRect(8, -4, 16, 50);
-    ctx.fillStyle = '#6e5010'; ctx.fillRect(24, -4, 5, 50);
-    // Platform top
-    ctx.fillStyle = '#654321'; ctx.fillRect(4, -8, 26, 5);
-    // Railing
-    ctx.strokeStyle = '#5C3A1E'; ctx.lineWidth = 1;
-    ctx.strokeRect(4, -14, 26, 6);
-    // Flag
-    ctx.fillStyle = '#cc2222'; ctx.fillRect(18, -22, 8, 6);
-    ctx.fillStyle = '#5C3A1E'; ctx.fillRect(17, -24, 2, 14);
-  } else if (t === 'Well') {
-    ctx.fillStyle = '#7a7068';
-    ctx.beginPath(); ctx.arc(12, 14, 8, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#3377cc';
-    ctx.beginPath(); ctx.arc(12, 14, 5, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#5C3A1E'; ctx.fillRect(5, 4, 2, 10); ctx.fillRect(17, 4, 2, 10);
-    ctx.fillRect(5, 3, 14, 2);
-    ctx.fillStyle = '#888'; ctx.fillRect(11, 5, 2, 6);
-  } else if (t === 'Town Hall') {
-    ctx.fillStyle = '#3d2b1f'; ctx.fillRect(-4, 38, 64, 5);
-    ctx.fillStyle = '#b0a080'; ctx.fillRect(0, 6, 48, 34);
-    ctx.fillStyle = '#8a7a5a'; ctx.fillRect(48, 6, 8, 34);
-    ctx.fillStyle = '#6a4a2a';
-    ctx.beginPath(); ctx.moveTo(-6, 6); ctx.lineTo(28, -12); ctx.lineTo(60, 6); ctx.fill();
-    ctx.fillStyle = '#5a3a1a';
-    ctx.beginPath(); ctx.moveTo(28, -12); ctx.lineTo(60, 6); ctx.lineTo(64, 8); ctx.lineTo(32, -10); ctx.fill();
-    ctx.fillStyle = '#ffd700'; ctx.fillRect(27, -16, 3, 6);
-    ctx.fillStyle = '#2c1a00'; ctx.fillRect(18, 20, 12, 20);
-    ctx.fillStyle = '#87CEEB'; ctx.fillRect(4, 14, 6, 6); ctx.fillRect(38, 14, 6, 6);
-    // Columns
-    ctx.fillStyle = '#c0b090'; ctx.fillRect(14, 20, 3, 20); ctx.fillRect(33, 20, 3, 20);
-  } else if (t === 'Church') {
-    ctx.fillStyle = '#3d2b1f'; ctx.fillRect(-2, 46, 46, 4);
-    ctx.fillStyle = '#c0b090'; ctx.fillRect(2, 10, 36, 38);
-    ctx.fillStyle = '#a09070'; ctx.fillRect(38, 10, 6, 38);
-    ctx.fillStyle = '#7a5a3a';
-    ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(22, -4); ctx.lineTo(46, 10); ctx.fill();
-    // Steeple
-    ctx.fillStyle = '#6a5a3a'; ctx.fillRect(17, -16, 8, 14);
-    ctx.fillStyle = '#5a4a2a';
-    ctx.beginPath(); ctx.moveTo(16, -16); ctx.lineTo(21, -28); ctx.lineTo(26, -16); ctx.fill();
-    // Cross
-    ctx.fillStyle = '#ffd700'; ctx.fillRect(20, -34, 2, 8); ctx.fillRect(17, -30, 8, 2);
-    ctx.fillStyle = '#2c1a00'; ctx.fillRect(14, 28, 10, 20);
-    ctx.fillStyle = '#87CEEB'; ctx.fillRect(5, 18, 5, 8);
-    // Circular window
-    ctx.fillStyle = '#aaccee';
-    ctx.beginPath(); ctx.arc(20, 16, 4, 0, Math.PI*2); ctx.fill();
-  } else if (t === 'Market') {
-    ctx.fillStyle = '#3d2b1f'; ctx.fillRect(-2, 30, 54, 3);
-    ctx.fillStyle = '#A0782C'; ctx.fillRect(0, 14, 48, 18);
-    // Canopy/awning
-    ctx.fillStyle = '#cc4444';
-    ctx.beginPath(); ctx.moveTo(-4, 14); ctx.lineTo(52, 14); ctx.lineTo(48, 6); ctx.lineTo(0, 6); ctx.fill();
-    ctx.fillStyle = '#dd6666';
-    for (let i = 0; i < 5; i++) ctx.fillRect(i*10, 6, 5, 8);
-    // Goods
-    ctx.fillStyle = '#4a8a2a'; ctx.fillRect(4, 20, 6, 6); ctx.fillStyle = '#cc4444'; ctx.fillRect(14, 20, 6, 6);
-    ctx.fillStyle = '#dda844'; ctx.fillRect(24, 20, 6, 6); ctx.fillStyle = '#8866aa'; ctx.fillRect(34, 20, 6, 6);
-    // Posts
-    ctx.fillStyle = '#5C3A1E'; ctx.fillRect(-2, 6, 3, 26); ctx.fillRect(48, 6, 3, 26);
-  } else if (t === 'Barracks') {
-    ctx.fillStyle = '#3d2b1f'; ctx.fillRect(-2, 32, 50, 4);
-    ctx.fillStyle = '#606060'; ctx.fillRect(0, 6, 40, 28);
-    ctx.fillStyle = '#4a4a4a'; ctx.fillRect(40, 6, 7, 28);
-    ctx.fillStyle = '#4a3020';
-    ctx.beginPath(); ctx.moveTo(-2, 6); ctx.lineTo(22, -6); ctx.lineTo(50, 6); ctx.fill();
-    ctx.fillStyle = '#2c1a00'; ctx.fillRect(14, 18, 10, 16);
-    // Banner
-    ctx.fillStyle = '#cc2222'; ctx.fillRect(36, -4, 6, 10);
-    ctx.fillStyle = '#5C3A1E'; ctx.fillRect(35, -8, 2, 16);
-    ctx.fillStyle = '#87CEEB'; ctx.fillRect(3, 12, 5, 5); ctx.fillRect(28, 12, 5, 5);
-  } else if (t === 'Quarry') {
-    ctx.fillStyle = '#7a7068'; ctx.fillRect(0, 8, 40, 24);
-    ctx.fillStyle = '#6a6058'; ctx.fillRect(10, 4, 20, 8);
-    ctx.fillStyle = '#5a5048';
-    for (let i = 0; i < 5; i++) ctx.fillRect(2+i*8, 28, 6, 4);
-  } else if (t === 'Library') {
-    ctx.fillStyle = '#3d2b1f'; ctx.fillRect(-2, 32, 48, 3);
-    ctx.fillStyle = '#b0a080'; ctx.fillRect(0, 6, 38, 28);
-    ctx.fillStyle = '#8a7a5a'; ctx.fillRect(38, 6, 6, 28);
-    ctx.fillStyle = '#5a6a7a';
-    ctx.beginPath(); ctx.moveTo(-2, 6); ctx.lineTo(22, -6); ctx.lineTo(48, 6); ctx.fill();
-    ctx.fillStyle = '#2c1a00'; ctx.fillRect(14, 18, 8, 16);
-    ctx.fillStyle = '#87CEEB'; ctx.fillRect(3, 12, 5, 5); ctx.fillRect(28, 12, 5, 5);
-  } else {
-    // Generic fallback
-    ctx.fillStyle = '#3d2b1f'; ctx.fillRect(-2, 30, 44, 3);
-    ctx.fillStyle = '#8B6914'; ctx.fillRect(0, 6, 36, 26);
-    ctx.fillStyle = '#6e5010'; ctx.fillRect(36, 6, 6, 26);
-    ctx.fillStyle = '#654321';
-    ctx.beginPath(); ctx.moveTo(-2, 6); ctx.lineTo(20, -4); ctx.lineTo(44, 6); ctx.fill();
-    ctx.fillStyle = '#2c1a00'; ctx.fillRect(13, 18, 8, 14);
+  const t=bld.type;
+  if(t==='Campfire'){
+    ctx.fillStyle='#4a3520';for(let i=0;i<5;i++){const a=(i/5)*Math.PI*2;ctx.fillRect(12+Math.cos(a)*6,12+Math.sin(a)*6,3,3)}
+    const f=Math.sin(performance.now()*.008)*.3+.7;
+    ctx.fillStyle='rgba(255,100,0,'+f+')';ctx.beginPath();ctx.moveTo(14,4);ctx.lineTo(10,14);ctx.lineTo(18,14);ctx.fill();
+    ctx.fillStyle='rgba(255,180,0,'+(f*.7)+')';ctx.beginPath();ctx.moveTo(14,7);ctx.lineTo(11,13);ctx.lineTo(17,13);ctx.fill();
+    ctx.fillStyle='rgba(255,140,40,0.06)';ctx.beginPath();ctx.arc(14,10,22,0,Math.PI*2);ctx.fill();
+  }else if(t==='Wood Hut'||t==='Log Cabin'){
+    const w=t==='Log Cabin'?36:30,h=t==='Log Cabin'?28:24;
+    ctx.fillStyle='#3d2b1f';ctx.fillRect(-1,h,w+4,3);
+    ctx.fillStyle='#9a7830';ctx.fillRect(0,6,w,h-4);
+    ctx.fillStyle='#7a5a20';ctx.fillRect(w,6,6,h-4);
+    ctx.fillStyle='#7a2a10';ctx.beginPath();ctx.moveTo(-2,6);ctx.lineTo(w/2,-6);ctx.lineTo(w+4,6);ctx.fill();
+    ctx.fillStyle='#601a08';ctx.beginPath();ctx.moveTo(w/2,-6);ctx.lineTo(w+4,6);ctx.lineTo(w+8,8);ctx.lineTo(w/2+4,-4);ctx.fill();
+    ctx.fillStyle='#1a0a00';ctx.fillRect(w/2-3,14,7,h-12);
+    ctx.fillStyle='#88bbdd';ctx.fillRect(3,10,4,4);ctx.fillRect(w-8,10,4,4);
+  }else if(t==='Farm'){
+    ctx.fillStyle='#3d2b1f';ctx.fillRect(-1,24,38,3);
+    ctx.fillStyle='#8a7030';ctx.fillRect(0,8,32,18);
+    ctx.fillStyle='#9a8840';ctx.beginPath();ctx.moveTo(-2,8);ctx.lineTo(18,-2);ctx.lineTo(38,8);ctx.fill();
+    ctx.fillStyle='#1a0a00';ctx.fillRect(12,14,6,12);
+    for(let i=0;i<3;i++){ctx.fillStyle='#5a3a1a';ctx.fillRect(-4,28+i*5,40,2);ctx.fillStyle='#4a8a2a';for(let j=0;j<5;j++)ctx.fillRect(-2+j*8,27+i*5,3,3)}
+  }else if(t==='Stone House'){
+    ctx.fillStyle='#3d2b1f';ctx.fillRect(-1,28,38,3);
+    ctx.fillStyle='#808080';ctx.fillRect(0,4,32,26);
+    for(let r=0;r<4;r++){ctx.fillStyle='#666';ctx.fillRect(0,4+r*6+5,32,1)}
+    ctx.fillStyle='#606060';ctx.fillRect(32,4,6,26);
+    ctx.fillStyle='#4a4a5a';ctx.beginPath();ctx.moveTo(-2,4);ctx.lineTo(18,-8);ctx.lineTo(40,4);ctx.fill();
+    ctx.fillStyle='#3a3a4a';ctx.beginPath();ctx.moveTo(18,-8);ctx.lineTo(40,4);ctx.lineTo(44,6);ctx.lineTo(22,-6);ctx.fill();
+    ctx.fillStyle='#1a0a00';ctx.fillRect(12,16,7,14);
+    ctx.fillStyle='#88bbdd';ctx.fillRect(3,10,4,4);ctx.fillRect(24,10,4,4);
+  }else if(t==='Blacksmith'){
+    ctx.fillStyle='#3d2b1f';ctx.fillRect(-1,28,38,3);
+    ctx.fillStyle='#5a5a5a';ctx.fillRect(0,4,32,26);ctx.fillStyle='#444';ctx.fillRect(32,4,6,26);
+    ctx.fillStyle='#4a4a4a';ctx.beginPath();ctx.moveTo(-2,4);ctx.lineTo(18,-4);ctx.lineTo(40,4);ctx.fill();
+    ctx.fillStyle='#444';ctx.fillRect(26,-6,5,10);// chimney
+    ctx.fillStyle='rgba(255,80,0,0.4)';ctx.fillRect(3,20,6,6);
+    ctx.fillStyle='#555';ctx.fillRect(20,20,6,3);ctx.fillRect(22,17,3,3);//anvil
+  }else if(t==='Watchtower'){
+    ctx.fillStyle='#3d2b1f';ctx.fillRect(6,40,18,3);
+    ctx.fillStyle='#8a7030';ctx.fillRect(8,0,14,42);ctx.fillStyle='#6a5020';ctx.fillRect(22,0,4,42);
+    ctx.fillStyle='#5a4010';ctx.fillRect(4,-4,24,4);
+    ctx.strokeStyle='#4a3010';ctx.lineWidth=1;ctx.strokeRect(4,-10,24,6);
+    ctx.fillStyle='#cc2222';ctx.fillRect(16,-16,7,5);ctx.fillStyle='#4a3010';ctx.fillRect(15,-18,2,10);
+  }else if(t==='Well'){
+    ctx.fillStyle='#7a7068';ctx.beginPath();ctx.arc(12,14,7,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#3872be';ctx.beginPath();ctx.arc(12,14,4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#4a3520';ctx.fillRect(6,6,2,8);ctx.fillRect(16,6,2,8);ctx.fillRect(6,5,12,2);
+  }else if(t==='Town Hall'){
+    ctx.fillStyle='#3d2b1f';ctx.fillRect(-3,34,54,4);
+    ctx.fillStyle='#b0a070';ctx.fillRect(0,4,42,32);ctx.fillStyle='#8a7a50';ctx.fillRect(42,4,7,32);
+    ctx.fillStyle='#6a4a20';ctx.beginPath();ctx.moveTo(-4,4);ctx.lineTo(24,-10);ctx.lineTo(52,4);ctx.fill();
+    ctx.fillStyle='#ffd700';ctx.fillRect(23,-13,3,5);
+    ctx.fillStyle='#1a0a00';ctx.fillRect(16,18,10,18);
+    ctx.fillStyle='#88bbdd';ctx.fillRect(4,12,5,5);ctx.fillRect(34,12,5,5);
+  }else if(t==='Church'){
+    ctx.fillStyle='#3d2b1f';ctx.fillRect(-1,38,38,3);
+    ctx.fillStyle='#c0b080';ctx.fillRect(2,8,30,32);ctx.fillStyle='#a09060';ctx.fillRect(32,8,5,32);
+    ctx.fillStyle='#7a5a30';ctx.beginPath();ctx.moveTo(0,8);ctx.lineTo(18,-4);ctx.lineTo(38,8);ctx.fill();
+    ctx.fillStyle='#6a5020';ctx.fillRect(15,-18,6,16);
+    ctx.fillStyle='#5a4010';ctx.beginPath();ctx.moveTo(14,-18);ctx.lineTo(18,-28);ctx.lineTo(22,-18);ctx.fill();
+    ctx.fillStyle='#ffd700';ctx.fillRect(17,-32,2,6);ctx.fillRect(14,-28,8,2);
+    ctx.fillStyle='#1a0a00';ctx.fillRect(12,24,10,16);
+  }else if(t==='Market'){
+    ctx.fillStyle='#3d2b1f';ctx.fillRect(-1,26,42,3);
+    ctx.fillStyle='#9a7830';ctx.fillRect(0,12,36,16);
+    ctx.fillStyle='#cc3333';ctx.beginPath();ctx.moveTo(-2,12);ctx.lineTo(40,12);ctx.lineTo(36,4);ctx.lineTo(2,4);ctx.fill();
+    ctx.fillStyle='#ee5555';for(let i=0;i<4;i++)ctx.fillRect(i*9+1,4,4,8);
+    ctx.fillStyle='#4a8a2a';ctx.fillRect(4,16,5,5);ctx.fillStyle='#cc4444';ctx.fillRect(12,16,5,5);ctx.fillStyle='#dda844';ctx.fillRect(20,16,5,5);
+    ctx.fillStyle='#4a3520';ctx.fillRect(-1,4,2,24);ctx.fillRect(38,4,2,24);
+  }else if(t==='Barracks'){
+    ctx.fillStyle='#3d2b1f';ctx.fillRect(-1,28,38,3);
+    ctx.fillStyle='#5a5a5a';ctx.fillRect(0,4,32,26);ctx.fillStyle='#444';ctx.fillRect(32,4,6,26);
+    ctx.fillStyle='#4a3020';ctx.beginPath();ctx.moveTo(-2,4);ctx.lineTo(18,-6);ctx.lineTo(40,4);ctx.fill();
+    ctx.fillStyle='#1a0a00';ctx.fillRect(12,16,8,14);
+    ctx.fillStyle='#cc2222';ctx.fillRect(30,-2,6,8);ctx.fillStyle='#4a3520';ctx.fillRect(29,-6,2,12);
+  }else{
+    ctx.fillStyle='#3d2b1f';ctx.fillRect(-1,26,36,3);
+    ctx.fillStyle='#8a7830';ctx.fillRect(0,4,28,24);ctx.fillStyle='#6a5820';ctx.fillRect(28,4,5,24);
+    ctx.fillStyle='#5a3820';ctx.beginPath();ctx.moveTo(-2,4);ctx.lineTo(16,-4);ctx.lineTo(36,4);ctx.fill();
+    ctx.fillStyle='#1a0a00';ctx.fillRect(10,14,6,14);
   }
   ctx.restore();
 }
 </script>
 <script>
-// ============================================================================
-// Drawing — Agents
-// ============================================================================
-const RACE_BODY = { human: '#3355aa', dwarf: '#aa6633', elf: '#33aa55', orc: '#aa3333' };
-const RACE_SKIN = { human: '#f0c8a0', dwarf: '#d4a870', elf: '#f0c8a0', orc: '#7ab648' };
-const PERSONALITY_HAT = { analyst: '#4488cc', optimist: '#ffcc33', dreamer: '#cc88ff', overachiever: '#ff4444', aggressive: '#cc2222', chaotic: '#ff66ff', grinder: '#888888', lazy: '#66aaaa' };
-const RACE_COLORS = { human: '#3355aa', dwarf: '#aa6633', elf: '#33aa55', orc: '#aa3333' };
-
-function drawAgent(agent, rx, ry) {
-  const knock = agent.knockedOut;
-  ctx.save();
-  ctx.translate(rx, ry);
-  if (knock) { ctx.rotate(Math.PI / 2); ctx.globalAlpha = 0.5; }
-
-  // Shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ctx.beginPath(); ctx.ellipse(2, 14, 9, 4, 0, 0, Math.PI*2); ctx.fill();
-
-  const body = RACE_BODY[agent.race] || '#3355aa';
-  const skin = RACE_SKIN[agent.race] || '#f0c8a0';
-
-  // Body/tunic
-  ctx.fillStyle = body;
-  ctx.fillRect(-7, -10, 14, 18);
-  // Belt
-  ctx.fillStyle = '#3a2a1a'; ctx.fillRect(-7, 2, 14, 2);
-
+// === DRAW AGENT ===
+function drawAgent(agent,rx,ry){
+  const ko=agent.knockedOut;
+  ctx.save();ctx.translate(rx,ry);
+  if(ko){ctx.rotate(Math.PI/2);ctx.globalAlpha=.5}
+  ctx.fillStyle='rgba(0,0,0,0.25)';ctx.beginPath();ctx.ellipse(1,12,8,3,0,0,Math.PI*2);ctx.fill();
+  const body={human:'#3355aa',dwarf:'#aa6633',elf:'#33aa55',orc:'#993333'}[agent.race]||'#3355aa';
+  const skin={human:'#f0c8a0',dwarf:'#d4a870',elf:'#f0c8a0',orc:'#7ab648'}[agent.race]||'#f0c8a0';
+  // Body
+  ctx.fillStyle=body;ctx.fillRect(-6,-8,12,16);
+  ctx.fillStyle='#2a1a0a';ctx.fillRect(-6,2,12,2);//belt
   // Head
-  ctx.fillStyle = skin;
-  ctx.fillRect(-6, -20, 12, 10);
-
+  ctx.fillStyle=skin;ctx.fillRect(-5,-18,10,10);
   // Eyes
-  ctx.fillStyle = '#111';
-  if (agent.facing === 'right') {
-    ctx.fillRect(-1, -17, 2, 2); ctx.fillRect(3, -17, 2, 2);
-  } else {
-    ctx.fillRect(-5, -17, 2, 2); ctx.fillRect(-1, -17, 2, 2);
-  }
-
-  // Hat/helmet
-  ctx.fillStyle = PERSONALITY_HAT[agent.personality] || '#666';
-  ctx.fillRect(-7, -24, 14, 4);
-  ctx.fillRect(-5, -26, 10, 3);
-
-  // Legs with walk animation
-  const walking = !['idle','rest'].includes(agent.currentTask);
-  const walk = walking ? Math.sin(agent.animFrame * 0.2) * 4 : 0;
-  ctx.fillStyle = '#3a2a1a';
-  ctx.fillRect(-5, 8, 4, 6 + walk);
-  ctx.fillRect(1, 8, 4, 6 - walk);
-  // Boots
-  ctx.fillStyle = '#2a1a0a';
-  ctx.fillRect(-6, 13 + Math.max(0, walk), 5, 3);
-  ctx.fillRect(0, 13 + Math.max(0, -walk), 5, 3);
-
+  ctx.fillStyle='#111';
+  if(agent.facing==='right'){ctx.fillRect(-1,-15,2,2);ctx.fillRect(3,-15,2,2)}
+  else{ctx.fillRect(-5,-15,2,2);ctx.fillRect(-1,-15,2,2)}
+  // Hat
+  const hatC={analyst:'#4488cc',optimist:'#ffcc33',dreamer:'#cc88ff',overachiever:'#ff4444',aggressive:'#cc2222',chaotic:'#ff66ff',grinder:'#888',lazy:'#66aaaa'}[agent.personality]||'#666';
+  ctx.fillStyle=hatC;ctx.fillRect(-6,-22,12,4);ctx.fillRect(-4,-24,8,3);
+  // Legs
+  const w=(['idle','rest'].includes(agent.currentTask))?0:Math.sin(agent.animFrame*.2)*3;
+  ctx.fillStyle='#2a1a0a';ctx.fillRect(-4,8,3,5+w);ctx.fillRect(1,8,3,5-w);
   // Arms
-  ctx.fillStyle = body;
-  ctx.fillRect(-9, -8, 3, 12);
-  ctx.fillRect(6, -8, 3, 12);
-
-  // Held tool
-  if (agent.currentTask === 'chop') {
-    ctx.fillStyle = '#6a5030'; ctx.fillRect(8, -12, 2, 16);
-    ctx.fillStyle = '#aaa'; ctx.fillRect(7, -14, 5, 4);
-  } else if (agent.currentTask === 'mine') {
-    ctx.fillStyle = '#6a5030'; ctx.fillRect(8, -10, 2, 14);
-    ctx.fillStyle = '#aaa'; ctx.fillRect(6, -12, 7, 3);
-  } else if (agent.currentTask === 'build') {
-    ctx.fillStyle = '#6a5030'; ctx.fillRect(8, -8, 2, 12);
-    ctx.fillStyle = '#888'; ctx.fillRect(6, -10, 5, 4);
-  }
-
-  // Health bar if damaged
-  if (agent.health < 100 && !knock) {
-    ctx.fillStyle = '#111'; ctx.fillRect(-10, -30, 20, 4);
-    ctx.fillStyle = agent.health > 50 ? '#33cc33' : agent.health > 25 ? '#ccaa33' : '#cc3333';
-    ctx.fillRect(-10, -30, 20 * (agent.health / 100), 4);
+  ctx.fillStyle=body;ctx.fillRect(-8,-6,3,10);ctx.fillRect(5,-6,3,10);
+  // Tool
+  if(agent.currentTask==='chop'){ctx.fillStyle='#6a5030';ctx.fillRect(7,-10,2,12);ctx.fillStyle='#aaa';ctx.fillRect(6,-12,4,3)}
+  else if(agent.currentTask==='mine'){ctx.fillStyle='#6a5030';ctx.fillRect(7,-8,2,10);ctx.fillStyle='#aaa';ctx.fillRect(5,-10,6,2)}
+  else if(agent.currentTask==='build'){ctx.fillStyle='#6a5030';ctx.fillRect(7,-6,2,10);ctx.fillStyle='#888';ctx.fillRect(5,-8,4,3)}
+  // HP bar
+  if(agent.health<100&&!ko){
+    ctx.fillStyle='#111';ctx.fillRect(-9,-28,18,3);
+    ctx.fillStyle=agent.health>50?'#3c3':agent.health>25?'#ca3':'#c33';
+    ctx.fillRect(-9,-28,18*(agent.health/100),3);
   }
   ctx.restore();
-
-  // Name tag
-  if (!knock) {
-    ctx.font = 'bold 10px monospace';
-    const tw = ctx.measureText(agent.name).width;
-    ctx.fillStyle = 'rgba(0,0,0,0.7)';
-    const tagX = rx - tw/2 - 4, tagY = ry - 37;
-    ctx.beginPath();
-    if (ctx.roundRect) { ctx.roundRect(tagX, tagY, tw + 8, 14, 3); }
-    else { ctx.rect(tagX, tagY, tw + 8, 14); }
-    ctx.fill();
-    // Small arrow
-    ctx.beginPath(); ctx.moveTo(rx-3, tagY+14); ctx.lineTo(rx, tagY+17); ctx.lineTo(rx+3, tagY+14); ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.textAlign = 'center';
-    ctx.fillText(agent.name, rx, tagY + 11);
-    ctx.textAlign = 'left';
+  if(!ko){
+    ctx.font='bold 9px monospace';const tw=ctx.measureText(agent.name).width;
+    ctx.fillStyle='rgba(0,0,0,0.7)';ctx.fillRect(rx-tw/2-3,ry-35,tw+6,12);
+    ctx.fillStyle='#fff';ctx.textAlign='center';ctx.fillText(agent.name,rx,ry-25);ctx.textAlign='left';
   }
 }
-
-// ============================================================================
-// Drawing — Animals
-// ============================================================================
-function drawAnimal(animal, rx, ry) {
-  ctx.save();
-  ctx.translate(rx, ry);
-
-  if (animal.type === 'deer') {
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.15)';
-    ctx.beginPath(); ctx.ellipse(1, 6, 8, 3, 0, 0, Math.PI*2); ctx.fill();
-    // Body
-    ctx.fillStyle = '#a07040'; ctx.fillRect(-7, -4, 14, 8);
-    // Lighter belly
-    ctx.fillStyle = '#c09060'; ctx.fillRect(-5, 0, 10, 3);
-    // Head
-    ctx.fillStyle = '#8a6030'; ctx.fillRect(-10, -8, 5, 6);
-    // Eye
-    ctx.fillStyle = '#222'; ctx.fillRect(-9, -7, 2, 2);
-    // Legs
-    ctx.fillStyle = '#7a5020';
-    ctx.fillRect(-5, 4, 2, 5); ctx.fillRect(-1, 4, 2, 5); ctx.fillRect(3, 4, 2, 5);
-    // Antlers
-    ctx.fillStyle = '#6a5020';
-    ctx.fillRect(-10, -13, 1, 6); ctx.fillRect(-11, -14, 3, 1);
-    ctx.fillRect(-7, -12, 1, 5); ctx.fillRect(-8, -13, 3, 1);
-  } else if (animal.type === 'rabbit') {
-    ctx.fillStyle = 'rgba(0,0,0,0.12)';
-    ctx.beginPath(); ctx.ellipse(0, 3, 4, 2, 0, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#c0a888';
-    ctx.beginPath(); ctx.ellipse(0, 0, 5, 4, 0, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#d0b898';
-    ctx.beginPath(); ctx.ellipse(-4, -3, 3, 2, 0, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#222'; ctx.fillRect(-5, -4, 1, 1);
-    ctx.fillStyle = '#d0b898'; ctx.fillRect(-5, -9, 2, 5); ctx.fillRect(-2, -9, 2, 5);
-    ctx.fillStyle = '#e0b0b0'; ctx.fillRect(-4, -8, 1, 3); ctx.fillRect(-1, -8, 1, 3);
-  } else if (animal.type === 'chicken') {
-    ctx.fillStyle = 'rgba(0,0,0,0.1)';
-    ctx.beginPath(); ctx.ellipse(0, 3, 5, 2, 0, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#f0e0c0';
-    ctx.beginPath(); ctx.ellipse(0, 0, 5, 4, 0, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#e8d0b0';
-    ctx.beginPath(); ctx.arc(-4, -3, 3, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#cc3300'; ctx.fillRect(-5, -6, 3, 3);
-    ctx.fillStyle = '#ff8800'; ctx.fillRect(-7, -3, 3, 1);
-    ctx.fillStyle = '#222'; ctx.fillRect(-5, -4, 1, 1);
-    // Legs
-    ctx.fillStyle = '#cc8800'; ctx.fillRect(-2, 3, 1, 3); ctx.fillRect(1, 3, 1, 3);
-  } else if (animal.type === 'wolf') {
-    ctx.fillStyle = 'rgba(0,0,0,0.15)';
-    ctx.beginPath(); ctx.ellipse(1, 6, 9, 3, 0, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#505050'; ctx.fillRect(-8, -4, 16, 8);
-    ctx.fillStyle = '#606060'; ctx.fillRect(-10, -8, 6, 6);
-    ctx.fillStyle = '#404040';
-    ctx.fillRect(-6, 4, 2, 5); ctx.fillRect(-2, 4, 2, 5); ctx.fillRect(4, 4, 2, 5);
-    ctx.fillStyle = '#333'; ctx.fillRect(-10, -11, 2, 4); ctx.fillRect(-6, -11, 2, 4);
-    ctx.fillStyle = '#ccaa00'; ctx.fillRect(-9, -7, 2, 2);
-  } else if (animal.type === 'fish') {
-    const jumping = animal.jumpTimer < 20;
-    const jumpY = jumping ? -Math.sin((20 - animal.jumpTimer) / 20 * Math.PI) * 10 : 0;
-    ctx.translate(0, jumpY);
-    ctx.globalAlpha = jumping ? 1 : 0.5;
-    ctx.fillStyle = '#5588bb';
-    ctx.beginPath(); ctx.ellipse(0, 0, 5, 3, 0, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#4477aa';
-    ctx.beginPath(); ctx.moveTo(5, 0); ctx.lineTo(9, -3); ctx.lineTo(9, 3); ctx.closePath(); ctx.fill();
-    if (jumping) {
-      ctx.fillStyle = 'rgba(150,200,255,0.4)';
-      ctx.beginPath(); ctx.arc(-1, 5, 3, 0, Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(2, 7, 2, 0, Math.PI*2); ctx.fill();
-    }
-    ctx.globalAlpha = 1;
+// === DRAW ANIMAL ===
+function drawAnimal(a,rx,ry){
+  ctx.save();ctx.translate(rx,ry);
+  if(a.type==='deer'){
+    ctx.fillStyle='rgba(0,0,0,0.12)';ctx.beginPath();ctx.ellipse(0,5,7,3,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#a07040';ctx.fillRect(-6,-3,12,7);
+    ctx.fillStyle='#c09060';ctx.fillRect(-4,0,8,3);
+    ctx.fillStyle='#8a6030';ctx.fillRect(-8,-7,4,5);
+    ctx.fillStyle='#6a4a1a';ctx.fillRect(-4,4,2,4);ctx.fillRect(2,4,2,4);
+    ctx.fillStyle='#6a5020';ctx.fillRect(-9,-11,1,5);ctx.fillRect(-6,-10,1,4);
+  }else if(a.type==='rabbit'){
+    ctx.fillStyle='rgba(0,0,0,0.08)';ctx.beginPath();ctx.ellipse(0,2,3,2,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#b8a080';ctx.beginPath();ctx.ellipse(0,0,4,3,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#c8b090';ctx.fillRect(-3,-7,2,4);ctx.fillRect(0,-7,2,4);
+  }else if(a.type==='chicken'){
+    ctx.fillStyle='rgba(0,0,0,0.08)';ctx.beginPath();ctx.ellipse(0,2,3,2,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#f0e0c0';ctx.beginPath();ctx.ellipse(0,0,4,3,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#cc3300';ctx.fillRect(-3,-4,2,2);ctx.fillStyle='#ff8800';ctx.fillRect(-5,-2,2,1);
+  }else if(a.type==='wolf'){
+    ctx.fillStyle='rgba(0,0,0,0.12)';ctx.beginPath();ctx.ellipse(0,5,8,3,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#505050';ctx.fillRect(-7,-3,14,7);ctx.fillStyle='#444';ctx.fillRect(-9,-7,5,5);
+    ctx.fillRect(-5,4,2,4);ctx.fillRect(3,4,2,4);
+  }else if(a.type==='fish'){
+    const j=a.jumpTimer<20,jy=j?-Math.sin((20-a.jumpTimer)/20*Math.PI)*10:0;
+    ctx.translate(0,jy);ctx.globalAlpha=j?1:.4;
+    ctx.fillStyle='#5588bb';ctx.beginPath();ctx.ellipse(0,0,4,2,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#4477aa';ctx.beginPath();ctx.moveTo(4,0);ctx.lineTo(7,-2);ctx.lineTo(7,2);ctx.fill();
+    if(j){ctx.fillStyle='rgba(150,200,255,0.4)';ctx.beginPath();ctx.arc(0,4,2,0,Math.PI*2);ctx.fill()}
+    ctx.globalAlpha=1;
   }
   ctx.restore();
 }
 </script>
 <script>
-// ============================================================================
-// WebSocket, Input, UI
-// ============================================================================
-let ws = null, connected = false, spectatorPoints = 0;
-
-function connect() {
-  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  ws = new WebSocket(proto + '//' + location.host);
-  ws.onopen = () => { connected = true; document.getElementById('loading').style.display = 'none'; document.getElementById('reconnect').style.display = 'none'; document.getElementById('game-container').style.display = 'block'; resize(); };
-  ws.onclose = () => { connected = false; document.getElementById('reconnect').style.display = 'flex'; setTimeout(connect, 3000); };
-  ws.onerror = () => { ws.close(); };
-  ws.onmessage = (e) => {
-    try {
-      const msg = JSON.parse(e.data);
-      if (msg.type === 'state') {
-        serverState = msg;
-        if (msg.terrainMods) {
-          let changed = false;
-          for (const mod of msg.terrainMods) {
-            if (terrainData[mod.y] && terrainData[mod.y][mod.x]) {
-              const c = terrainData[mod.y][mod.x];
-              if (mod.hasTree !== undefined && c.hasTree !== mod.hasTree) { c.hasTree = mod.hasTree; changed = true; }
-              if (mod.hasRock !== undefined) c.hasRock = mod.hasRock;
-              if (mod.stump !== undefined) c.stump = mod.stump;
-            }
-          }
-          if (changed) terrainDirty = true;
-        }
-        updateUI(msg);
-        if (msg.activeEvent && msg.activeEvent !== lastBannerText) {
-          lastBannerText = msg.activeEvent;
-          const banner = document.getElementById('event-banner');
-          banner.textContent = msg.activeEvent;
-          banner.classList.add('visible');
-          bannerTimer = 180;
-        }
-      } else if (msg.type === 'points_update') {
-        spectatorPoints = msg.points;
-        document.getElementById('points-display').textContent = msg.points;
-      }
-    } catch (err) {}
-  };
+// === WEBSOCKET, INPUT, UI ===
+let ws=null,connected=false,spectatorPoints=0;
+function connect(){
+  const p=location.protocol==='https:'?'wss:':'ws:';
+  ws=new WebSocket(p+'//'+location.host);
+  ws.onopen=()=>{connected=true;document.getElementById('loading').style.display='none';document.getElementById('reconnect').style.display='none';document.getElementById('game-container').style.display='block';resize()};
+  ws.onclose=()=>{connected=false;document.getElementById('reconnect').style.display='flex';setTimeout(connect,3000)};
+  ws.onerror=()=>{ws.close()};
+  ws.onmessage=(e)=>{try{const m=JSON.parse(e.data);
+    if(m.type==='state'){serverState=m;
+      if(m.terrainMods)for(const mod of m.terrainMods){if(terrainData[mod.y]&&terrainData[mod.y][mod.x]){const c=terrainData[mod.y][mod.x];if(mod.hasTree!==undefined&&c.hasTree!==mod.hasTree){c.hasTree=mod.hasTree;c.drawTree=mod.hasTree;terrainDirty=true}if(mod.hasRock!==undefined)c.hasRock=mod.hasRock;if(mod.stump!==undefined)c.stump=mod.stump}}
+      updateUI(m);
+      if(m.activeEvent&&m.activeEvent!==lastBannerText){lastBannerText=m.activeEvent;const b=document.getElementById('event-banner');b.textContent=m.activeEvent;b.classList.add('visible');bannerTimer=180}
+    }else if(m.type==='points_update'){spectatorPoints=m.points;document.getElementById('points-display').textContent=m.points}
+  }catch(err){}}
 }
+canvas.addEventListener('mousedown',(e)=>{if(e.button===0){dragging=true;dragSX=e.clientX;dragSY=e.clientY;dragCX=camX;dragCY=camY;canvas.style.cursor='grabbing';followAgent=null}});
+window.addEventListener('mousemove',(e)=>{if(dragging){camX=dragCX-(e.clientX-dragSX)/zoom;camY=dragCY-(e.clientY-dragSY)/zoom}});
+window.addEventListener('mouseup',()=>{dragging=false;canvas.style.cursor='grab'});
+canvas.addEventListener('wheel',(e)=>{e.preventDefault();const o=zoom;zoom=Math.max(.3,Math.min(3,zoom*(e.deltaY<0?1.1:.9)));camX+=e.clientX/o-e.clientX/zoom;camY+=(e.clientY-36)/o-(e.clientY-36)/zoom},{passive:false});
+canvas.addEventListener('dblclick',(e)=>{if(!serverState)return;const wx=camX+e.clientX/zoom,wy=camY+(e.clientY-36)/zoom;let cl=null,md=60;for(const a of serverState.agents){const d=Math.abs(a.x-wx)+Math.abs(a.y-wy);if(d<md){md=d;cl=a}}if(cl){followAgent=cl.name;selectedAgent=cl.name;showAgentDetail()}});
+function resize(){W=window.innerWidth;H=window.innerHeight;canvas.width=W;canvas.height=H}
+window.addEventListener('resize',resize);
 
-// Input
-canvas.addEventListener('mousedown', (e) => { if (e.button === 0) { dragging = true; dragStartX = e.clientX; dragStartY = e.clientY; dragCamX = camX; dragCamY = camY; canvas.style.cursor = 'grabbing'; followAgent = null; } });
-window.addEventListener('mousemove', (e) => { if (dragging) { camX = dragCamX - (e.clientX - dragStartX) / zoom; camY = dragCamY - (e.clientY - dragStartY) / zoom; } });
-window.addEventListener('mouseup', () => { dragging = false; canvas.style.cursor = 'grab'; });
-canvas.addEventListener('wheel', (e) => { e.preventDefault(); const old = zoom; zoom = Math.max(0.3, Math.min(3, zoom * (e.deltaY < 0 ? 1.1 : 0.9))); camX += e.clientX / old - e.clientX / zoom; camY += (e.clientY - 40) / old - (e.clientY - 40) / zoom; }, { passive: false });
-canvas.addEventListener('dblclick', (e) => { if (!serverState) return; const wx = camX + e.clientX / zoom, wy = camY + (e.clientY-40) / zoom; let cl = null, md = 60; for (const a of serverState.agents) { const d = Math.abs(a.x-wx)+Math.abs(a.y-wy); if (d<md) { md=d; cl=a; } } if (cl) { followAgent = cl.name; selectedAgent = cl.name; showAgentDetail(cl.name); } });
-function resize() { W = window.innerWidth; H = window.innerHeight; canvas.width = W; canvas.height = H; }
-window.addEventListener('resize', resize);
-
-// Agent detail
-function showAgentDetail(name) { document.getElementById('agent-detail').style.display = 'block'; }
-function updateAgentDetail() {
-  if (!selectedAgent || !serverState) return;
-  const a = serverState.agents.find(ag => ag.name === selectedAgent);
-  if (!a) { document.getElementById('agent-detail').style.display = 'none'; return; }
-  document.getElementById('detail-name').textContent = a.name + ' (' + a.race + ' ' + a.personality + ')';
-  const TI = { idle:'Idle', chop:'Chopping', mine:'Mining', forage:'Foraging', build:'Building', rest:'Resting', explore:'Exploring', socialize:'Chatting', fight:'Fighting!', flee:'Fleeing!' };
-  document.getElementById('detail-info').innerHTML = 'Task: <b>' + (TI[a.currentTask]||a.currentTask) + '</b>' + (a.clan ? ' | Clan: ' + ((serverState.clans.find(c=>c.id===a.clan)||{}).name||'?') : '') + (a.knockedOut ? ' | <span style="color:#f44">KO</span>' : '') + ' | K:' + a.kills + ' B:' + a.buildingsBuilt;
-  const bar = (l,v,m,c) => '<div style="margin:1px 0"><span style="display:inline-block;width:50px;color:#777">' + l + '</span><span style="display:inline-block;width:100px;height:5px;background:#1a1a24;border-radius:2px;vertical-align:middle"><span style="display:inline-block;width:' + (v/m*100) + '%;height:100%;background:' + c + ';border-radius:2px"></span></span> <span style="color:#666">' + Math.round(v) + '</span></div>';
-  document.getElementById('detail-stats').innerHTML = bar('HP',a.health,100,a.health>50?'#33cc33':'#cc3333') + bar('Energy',a.energy,100,'#3388cc') + bar('Hunger',a.hunger,100,'#cc8833') + bar('Morale',a.morale,100,'#cccc33');
-  document.getElementById('detail-inventory').innerHTML = '<span style="color:#8B6914">W:' + a.inventory.wood + '</span> <span style="color:#888">S:' + a.inventory.stone + '</span> <span style="color:#ffd700">G:' + (a.inventory.gold||0) + '</span> <span style="color:#6a4">F:' + a.inventory.food + '</span>';
-  const rels = Object.entries(a.relationships||{}).sort((a,b)=>b[1]-a[1]).slice(0,3);
-  document.getElementById('detail-relations').innerHTML = rels.length ? rels.map(([n,v])=>n+':'+(v>0?'+':'')+Math.round(v)).join(' ') : '';
+function showAgentDetail(){document.getElementById('agent-detail').style.display='block'}
+function updateAgentDetail(){
+  if(!selectedAgent||!serverState)return;
+  const a=serverState.agents.find(x=>x.name===selectedAgent);
+  if(!a){document.getElementById('agent-detail').style.display='none';return}
+  document.getElementById('detail-name').textContent=a.name+' ('+a.race+' '+a.personality+')';
+  const T={idle:'Idle',chop:'Chopping',mine:'Mining',forage:'Foraging',build:'Building',rest:'Resting',explore:'Exploring',socialize:'Chatting',fight:'Fighting!',flee:'Fleeing!'};
+  document.getElementById('detail-info').innerHTML='Task: <b>'+(T[a.currentTask]||a.currentTask)+'</b>'+(a.clan?' | Clan: '+((serverState.clans.find(c=>c.id===a.clan)||{}).name||'?'):'')+' | K:'+a.kills+' B:'+a.buildingsBuilt;
+  const bar=(l,v,m,c)=>'<div style="margin:1px 0"><span style="display:inline-block;width:50px;color:#777">'+l+'</span><span style="display:inline-block;width:100px;height:5px;background:#1a1a24;border-radius:2px;vertical-align:middle"><span style="display:inline-block;width:'+(v/m*100)+'%;height:100%;background:'+c+';border-radius:2px"></span></span> <span style="color:#666">'+Math.round(v)+'</span></div>';
+  document.getElementById('detail-stats').innerHTML=bar('HP',a.health,100,a.health>50?'#3c3':'#c33')+bar('Energy',a.energy,100,'#38c')+bar('Hunger',a.hunger,100,'#c83')+bar('Morale',a.morale,100,'#cc3');
+  document.getElementById('detail-inventory').innerHTML='<span style="color:#8B6914">W:'+a.inventory.wood+'</span> <span style="color:#888">S:'+a.inventory.stone+'</span> <span style="color:#ffd700">G:'+(a.inventory.gold||0)+'</span> <span style="color:#6a4">F:'+a.inventory.food+'</span>';
 }
-document.getElementById('detail-close').addEventListener('click', () => { document.getElementById('agent-detail').style.display = 'none'; selectedAgent = null; });
+document.getElementById('detail-close').addEventListener('click',()=>{document.getElementById('agent-detail').style.display='none';selectedAgent=null});
+document.getElementById('deploy-btn').addEventListener('click',()=>{if(!ws||ws.readyState!==1)return;ws.send(JSON.stringify({type:'deploy_agent',name:document.getElementById('deploy-name').value||undefined,race:document.getElementById('deploy-race').value,personality:document.getElementById('deploy-personality').value}))});
+document.getElementById('btn-food').addEventListener('click',()=>{if(!ws||ws.readyState!==1)return;ws.send(JSON.stringify({type:'drop_food',x:camX+W/(2*zoom),y:camY+H/(2*zoom)}))});
+document.getElementById('btn-rain').addEventListener('click',()=>{if(!ws||ws.readyState!==1)return;ws.send(JSON.stringify({type:'trigger_rain'}))});
+document.getElementById('btn-speed').addEventListener('click',()=>{if(!ws||ws.readyState!==1||!serverState||!serverState.agents.length)return;ws.send(JSON.stringify({type:'speed_boost',target:serverState.agents[Math.floor(Math.random()*serverState.agents.length)].name}))});
+document.getElementById('btn-gift').addEventListener('click',()=>{if(!ws||ws.readyState!==1)return;ws.send(JSON.stringify({type:'mystery_gift'}))});
 
-// Deploy/influence
-document.getElementById('deploy-btn').addEventListener('click', () => { if (!ws||ws.readyState!==1) return; ws.send(JSON.stringify({type:'deploy_agent', name:document.getElementById('deploy-name').value||undefined, race:document.getElementById('deploy-race').value, personality:document.getElementById('deploy-personality').value})); });
-document.getElementById('btn-food').addEventListener('click', () => { if (!ws||ws.readyState!==1) return; ws.send(JSON.stringify({type:'drop_food', x:camX+W/(2*zoom), y:camY+H/(2*zoom)})); });
-document.getElementById('btn-rain').addEventListener('click', () => { if (!ws||ws.readyState!==1) return; ws.send(JSON.stringify({type:'trigger_rain'})); });
-document.getElementById('btn-speed').addEventListener('click', () => { if (!ws||ws.readyState!==1||!serverState) return; const t = serverState.agents[Math.floor(Math.random()*serverState.agents.length)]; if(t) ws.send(JSON.stringify({type:'speed_boost', target:t.name})); });
-document.getElementById('btn-gift').addEventListener('click', () => { if (!ws||ws.readyState!==1) return; ws.send(JSON.stringify({type:'mystery_gift'})); });
-
-// UI update
-function updateUI(state) {
-  document.getElementById('era-display').textContent = state.era.charAt(0).toUpperCase() + state.era.slice(1);
-  document.getElementById('pop-display').textContent = state.agents.length;
-  document.getElementById('bld-display').textContent = state.buildings.filter(b=>b.complete).length;
-  document.getElementById('day-display').textContent = state.day;
-  document.getElementById('spec-display').textContent = state.spectatorCount;
-  document.getElementById('event-display').textContent = state.activeEvent || '';
-  // Time icon
-  const isDay = state.timeOfDay > 0.25 && state.timeOfDay < 0.75;
-  document.getElementById('time-icon-display').innerHTML = isDay ? '<span style="color:#ffd700">&#9788;</span>' : '<span style="color:#aaccff">&#9789;</span>';
-
-  const TI = { idle:'Idle', chop:'Chopping', mine:'Mining', forage:'Foraging', build:'Building', rest:'Resting', explore:'Exploring', socialize:'Chatting', fight:'Fighting!', flee:'Fleeing!' };
-  let ah = '';
-  for (const a of state.agents) {
-    const col = a.clan ? (state.clans.find(c=>c.id===a.clan)||{}).color||'#888' : RACE_COLORS[a.race]||'#888';
-    const hc = a.health>50?'#33cc33':a.health>25?'#ccaa33':'#cc3333';
-    ah += '<div class="agent-item" data-agent="'+a.name+'"><span class="agent-dot" style="background:'+col+'"></span><span><span class="agent-name">'+a.name+'</span><br><span class="agent-task">'+(TI[a.currentTask]||a.currentTask)+'</span></span><span class="agent-health-bar"><span class="agent-health-fill" style="width:'+a.health+'%;background:'+hc+'"></span></span></div>';
-  }
-  const al = document.getElementById('agent-list'); al.innerHTML = ah;
-  al.querySelectorAll('.agent-item').forEach(el => { el.addEventListener('click', () => { followAgent = el.dataset.agent; selectedAgent = el.dataset.agent; showAgentDetail(el.dataset.agent); }); });
-
-  document.getElementById('settlement-list').innerHTML = state.settlements.map(s => '<div class="settlement-item">' + s.name + ' <span style="color:#666">(' + s.phase + ', ' + (s.buildingCount||0) + ')</span></div>').join('');
-  document.getElementById('clan-list').innerHTML = state.clans.map(c => '<div style="color:'+c.color+';padding:2px 0;font-size:12px">'+c.name+' <span style="color:#555">('+c.members.length+')</span></div>').join('');
-  document.getElementById('event-feed').innerHTML = state.recentEvents.slice(0,15).map(e => '<div class="event-item">'+e.text+'</div>').join('');
-
+function updateUI(s){
+  document.getElementById('era-display').textContent=s.era[0].toUpperCase()+s.era.slice(1);
+  document.getElementById('pop-display').textContent=s.agents.length;
+  document.getElementById('bld-display').textContent=s.buildings.filter(b=>b.complete).length;
+  document.getElementById('day-display').textContent=s.day;
+  document.getElementById('spec-display').textContent=s.spectatorCount;
+  document.getElementById('event-display').textContent=s.activeEvent||'';
+  document.getElementById('time-icon-display').innerHTML=(s.timeOfDay>.25&&s.timeOfDay<.75)?'<span style="color:#ffd700">&#9788;</span>':'<span style="color:#aaccff">&#9789;</span>';
+  const T={idle:'Idle',chop:'Chopping',mine:'Mining',forage:'Foraging',build:'Building',rest:'Resting',explore:'Exploring',socialize:'Chatting',fight:'Fighting!',flee:'Fleeing!'};
+  let ah='';for(const a of s.agents){const c=a.clan?(s.clans.find(x=>x.id===a.clan)||{}).color||'#888':RACE_COLORS[a.race]||'#888';ah+='<div class="agent-item" data-agent="'+a.name+'"><span class="agent-dot" style="background:'+c+'"></span><span><span class="agent-name">'+a.name+'</span><br><span class="agent-task">'+(T[a.currentTask]||a.currentTask)+'</span></span><span class="agent-health-bar"><span class="agent-health-fill" style="width:'+a.health+'%;background:'+(a.health>50?'#3c3':'#c33')+'"></span></span></div>'}
+  const al=document.getElementById('agent-list');al.innerHTML=ah;al.querySelectorAll('.agent-item').forEach(el=>{el.addEventListener('click',()=>{followAgent=el.dataset.agent;selectedAgent=el.dataset.agent;showAgentDetail()})});
+  document.getElementById('settlement-list').innerHTML=s.settlements.map(x=>'<div class="settlement-item">'+x.name+' <span style="color:#666">('+x.phase+', '+(x.buildingCount||0)+')</span></div>').join('');
+  document.getElementById('clan-list').innerHTML=s.clans.map(c=>'<div style="color:'+c.color+';padding:2px 0;font-size:12px">'+c.name+' ('+c.members.length+')</div>').join('');
+  document.getElementById('event-feed').innerHTML=s.recentEvents.slice(0,15).map(e=>'<div class="event-item">'+e.text+'</div>').join('');
   // Minimap
-  minimapCtx.drawImage(minimapCache, 0, 0);
-  const mw = minimapCanvas.width, mh = minimapCanvas.height;
-  const msx = mw / (WORLD_WIDTH * TILE_SIZE), msy = mh / (WORLD_HEIGHT * TILE_SIZE);
-  for (const b of state.buildings) { minimapCtx.fillStyle = b.complete ? '#ffd700' : '#886600'; minimapCtx.fillRect(b.x*TILE_SIZE*msx-1, b.y*TILE_SIZE*msy-1, 3, 3); }
-  for (const a of state.agents) { minimapCtx.fillStyle = RACE_COLORS[a.race]||'#ff4444'; minimapCtx.fillRect(a.x*msx-1, a.y*msy-1, 3, 3); }
-  minimapCtx.strokeStyle = 'rgba(255,255,255,0.7)'; minimapCtx.lineWidth = 1;
-  minimapCtx.strokeRect(camX*msx, camY*msy, W/zoom*msx, H/zoom*msy);
-
+  minimapCtx.drawImage(mmCache,0,0);
+  const mx=254/(WORLD_WIDTH*TILE_SIZE),my=200/(WORLD_HEIGHT*TILE_SIZE);
+  for(const b of s.buildings){minimapCtx.fillStyle=b.complete?'#ffd700':'#886600';minimapCtx.fillRect(b.x*TILE_SIZE*mx-1,b.y*TILE_SIZE*my-1,3,3)}
+  for(const a of s.agents){minimapCtx.fillStyle=RACE_COLORS[a.race]||'#f44';minimapCtx.fillRect(a.x*mx-1,a.y*my-1,3,3)}
+  minimapCtx.strokeStyle='rgba(255,255,255,.7)';minimapCtx.lineWidth=1;minimapCtx.strokeRect(camX*mx,camY*my,W/zoom*mx,H/zoom*my);
   updateAgentDetail();
 }
-
-minimapCanvas.addEventListener('click', (e) => { const r = minimapCanvas.getBoundingClientRect(); camX = ((e.clientX-r.left)/minimapCanvas.width)*WORLD_WIDTH*TILE_SIZE - W/(2*zoom); camY = ((e.clientY-r.top)/minimapCanvas.height)*WORLD_HEIGHT*TILE_SIZE - H/(2*zoom); followAgent = null; });
+minimapCanvas.addEventListener('click',(e)=>{const r=minimapCanvas.getBoundingClientRect();camX=((e.clientX-r.left)/254)*WORLD_WIDTH*TILE_SIZE-W/(2*zoom);camY=((e.clientY-r.top)/200)*WORLD_HEIGHT*TILE_SIZE-H/(2*zoom);followAgent=null});
 </script>
 <script>
-// ============================================================================
-// Main Render Loop
-// ============================================================================
-let lastFrame = performance.now();
-
-function render(now) {
+// === MAIN RENDER LOOP ===
+let lastFrame=performance.now();
+function render(now){
   requestAnimationFrame(render);
-  const dt = Math.min(now - lastFrame, 100);
-  lastFrame = now;
+  const dt=Math.min(now-lastFrame,100);lastFrame=now;
+  fpsC++;if(now-fpsT>=1000){fpsD=fpsC;fpsC=0;fpsT=now;document.getElementById('fps-display').textContent=fpsD+' FPS'}
+  if(!serverState)return;
+  if(followAgent){const a=serverState.agents.find(x=>x.name===followAgent);if(a){camX+=(a.x-W/(2*zoom)-camX)*.05;camY+=(a.y-H/(2*zoom)-camY)*.05}}
+  camX=Math.max(0,Math.min(WORLD_WIDTH*TILE_SIZE-W/zoom,camX));
+  camY=Math.max(0,Math.min(WORLD_HEIGHT*TILE_SIZE-H/zoom,camY));
 
-  // FPS
-  fpsCounter++;
-  if (now - fpsTime >= 1000) { fpsDisplay = fpsCounter; fpsCounter = 0; fpsTime = now; document.getElementById('fps-display').textContent = fpsDisplay + ' FPS'; }
+  ctx.clearRect(0,0,W,H);ctx.save();ctx.scale(zoom,zoom);ctx.translate(-camX,-camY);
+  const vx1=Math.max(0,Math.floor(camX/TILE_SIZE)-2),vy1=Math.max(0,Math.floor(camY/TILE_SIZE)-2);
+  const vx2=Math.min(WORLD_WIDTH,Math.ceil((camX+W/zoom)/TILE_SIZE)+2),vy2=Math.min(WORLD_HEIGHT,Math.ceil((camY+H/zoom)/TILE_SIZE)+2);
 
-  if (!serverState) return;
+  if(terrainDirty)renderTerrainCache();
+  ctx.drawImage(terrainCache,0,0);
 
-  // Follow agent
-  if (followAgent) {
-    const a = serverState.agents.find(ag => ag.name === followAgent);
-    if (a) { camX += (a.x - W/(2*zoom) - camX) * 0.05; camY += (a.y - H/(2*zoom) - camY) * 0.05; }
-  }
-  const maxX = WORLD_WIDTH*TILE_SIZE - W/zoom, maxY = WORLD_HEIGHT*TILE_SIZE - H/zoom;
-  camX = Math.max(0, Math.min(maxX, camX));
-  camY = Math.max(0, Math.min(maxY, camY));
-
-  ctx.clearRect(0, 0, W, H);
-  ctx.save();
-  ctx.scale(zoom, zoom);
-  ctx.translate(-camX, -camY);
-
-  // Viewport
-  const vx1 = Math.max(0, Math.floor(camX / TILE_SIZE) - 2);
-  const vy1 = Math.max(0, Math.floor(camY / TILE_SIZE) - 2);
-  const vx2 = Math.min(WORLD_WIDTH, Math.ceil((camX + W/zoom) / TILE_SIZE) + 2);
-  const vy2 = Math.min(WORLD_HEIGHT, Math.ceil((camY + H/zoom) / TILE_SIZE) + 2);
-
-  // Redraw terrain cache if dirty
-  if (terrainDirty) renderTerrainCache();
-
-  // 1. Terrain
-  ctx.drawImage(terrainCache, 0, 0);
-
-  // 2. Water effects
-  const st = now * 0.001;
-  for (let y = vy1; y < vy2; y++) {
-    for (let x = vx1; x < vx2; x++) {
-      const cell = terrainData[y][x];
-      if (cell.type === 'shallow_water' || cell.type === 'deep_water') {
-        // Subtle shimmer
-        const sh = Math.sin(st * 1.5 + x * 0.7 + y * 0.5) * 0.12;
-        if (sh > 0) {
-          ctx.fillStyle = 'rgba(100,170,240,' + sh.toFixed(2) + ')';
-          ctx.fillRect(x*TILE_SIZE, y*TILE_SIZE, TILE_SIZE, TILE_SIZE);
-        }
-        // Wave edge dots — check if adjacent to land
-        const isEdge = (x > 0 && !terrainData[y][x-1].type.includes('water')) ||
-                       (x < WORLD_WIDTH-1 && !terrainData[y][x+1].type.includes('water')) ||
-                       (y > 0 && !terrainData[y-1][x].type.includes('water')) ||
-                       (y < WORLD_HEIGHT-1 && !terrainData[y+1][x].type.includes('water'));
-        if (isEdge) {
-          const waveOff = Math.floor(now * 0.002 + x + y) % 3;
-          ctx.fillStyle = 'rgba(102,170,238,0.5)';
-          ctx.fillRect(x*TILE_SIZE + (waveOff*5)%14, y*TILE_SIZE + (waveOff*3)%14, 2, 2);
-          ctx.fillRect(x*TILE_SIZE + ((waveOff+1)*7)%14, y*TILE_SIZE + ((waveOff+2)*4)%14, 2, 2);
-        }
-      }
+  // Water shimmer
+  const st=now*.001;
+  for(let y=vy1;y<vy2;y++)for(let x=vx1;x<vx2;x++){
+    const c=terrainData[y][x];
+    if(c.type==='shallow_water'||c.type==='deep_water'){
+      const sh=Math.sin(st*1.5+x*.7+y*.5)*.08;
+      if(sh>0){ctx.fillStyle='rgba(100,170,240,'+sh.toFixed(2)+')';ctx.fillRect(x*TILE_SIZE,y*TILE_SIZE,TILE_SIZE,TILE_SIZE)}
     }
   }
 
-  // 3. Collect entities for Y-sorting
-  const drawList = [];
-
-  for (let y = vy1; y < vy2; y++) {
-    for (let x = vx1; x < vx2; x++) {
-      if (terrainData[y][x].stump) drawList.push({ type:'stump', y:y*TILE_SIZE+TILE_SIZE, x:x*TILE_SIZE+TILE_SIZE/2 });
-      if (terrainData[y][x].renderTree && terrainData[y][x].hasTree) {
-        let wobble = 0;
-        for (const a of serverState.agents) {
-          if (a.currentTask === 'chop' && a.taskTimer > 0) {
-            const tx = Math.floor((a.targetX||0) / TILE_SIZE), ty = Math.floor((a.targetY||0) / TILE_SIZE);
-            if (tx === x && ty === y) { wobble = Math.sin(now * 0.008) * 0.06; break; }
-          }
-        }
-        drawList.push({ type:'tree', y:y*TILE_SIZE+TILE_SIZE, x:x*TILE_SIZE+TILE_SIZE/2, treeType:terrainData[y][x].treeType, wobble });
-      }
-      if (terrainData[y][x].hasRock) drawList.push({ type:'rock', y:y*TILE_SIZE+TILE_SIZE, x:x*TILE_SIZE+TILE_SIZE/2 });
+  // Collect Y-sorted entities
+  const dl=[];
+  for(let y=vy1;y<vy2;y++)for(let x=vx1;x<vx2;x++){
+    const c=terrainData[y][x];
+    if(c.stump)dl.push({t:'stump',y:y*TILE_SIZE+TILE_SIZE,x:x*TILE_SIZE+TILE_SIZE/2});
+    if(c.drawTree&&c.hasTree){
+      let w=0;for(const a of serverState.agents)if(a.currentTask==='chop'&&a.taskTimer>0){const tx=Math.floor((a.targetX||0)/TILE_SIZE),ty=Math.floor((a.targetY||0)/TILE_SIZE);if(tx===x&&ty===y){w=Math.sin(now*.008)*.06;break}}
+      dl.push({t:'tree',y:y*TILE_SIZE+TILE_SIZE,x:x*TILE_SIZE+TILE_SIZE/2,tt:c.treeType,w});
     }
+    if(c.hasRock)dl.push({t:'rock',y:y*TILE_SIZE+TILE_SIZE,x:x*TILE_SIZE+TILE_SIZE/2});
   }
+  for(const b of serverState.buildings)if(b.x>=vx1-1&&b.x<=vx2+1&&b.y>=vy1-1&&b.y<=vy2+1)dl.push({t:'bld',y:b.y*TILE_SIZE+TILE_SIZE+12,x:b.x*TILE_SIZE,d:b});
+  for(const a of serverState.animals){const gx=a.x/TILE_SIZE,gy=a.y/TILE_SIZE;if(gx>=vx1-1&&gx<=vx2+1&&gy>=vy1-1&&gy<=vy2+1){const k=a.type+'_'+Math.round(a.x/40)+'_'+Math.round(a.y/40);if(!interpPos[k])interpPos[k]={x:a.x,y:a.y};interpPos[k].x+=(a.x-interpPos[k].x)*.12;interpPos[k].y+=(a.y-interpPos[k].y)*.12;dl.push({t:'ani',y:interpPos[k].y,x:interpPos[k].x,d:a,rx:interpPos[k].x,ry:interpPos[k].y})}}
+  for(const a of serverState.agents){const gx=a.x/TILE_SIZE,gy=a.y/TILE_SIZE;if(gx>=vx1-3&&gx<=vx2+3&&gy>=vy1-3&&gy<=vy2+3){if(!interpPos[a.name])interpPos[a.name]={x:a.x,y:a.y};interpPos[a.name].x+=(a.x-interpPos[a.name].x)*.12;interpPos[a.name].y+=(a.y-interpPos[a.name].y)*.12;dl.push({t:'agt',y:interpPos[a.name].y+8,x:interpPos[a.name].x,d:a,rx:interpPos[a.name].x,ry:interpPos[a.name].y})}}
 
-  // Buildings
-  for (const b of serverState.buildings) {
-    if (b.x >= vx1-1 && b.x <= vx2+1 && b.y >= vy1-1 && b.y <= vy2+1)
-      drawList.push({ type:'building', y:b.y*TILE_SIZE+TILE_SIZE+16, x:b.x*TILE_SIZE, data:b });
-  }
-
-  // Animals
-  for (const a of serverState.animals) {
-    const gx = a.x/TILE_SIZE, gy = a.y/TILE_SIZE;
-    if (gx >= vx1-1 && gx <= vx2+1 && gy >= vy1-1 && gy <= vy2+1) {
-      const key = a.type+'_'+Math.round(a.x/40)+'_'+Math.round(a.y/40);
-      if (!interpPos[key]) interpPos[key] = { x:a.x, y:a.y };
-      interpPos[key].x += (a.x - interpPos[key].x) * 0.12;
-      interpPos[key].y += (a.y - interpPos[key].y) * 0.12;
-      drawList.push({ type:'animal', y:interpPos[key].y, x:interpPos[key].x, data:a, rx:interpPos[key].x, ry:interpPos[key].y });
-    }
-  }
-
-  // Agents
-  for (const a of serverState.agents) {
-    const gx = a.x/TILE_SIZE, gy = a.y/TILE_SIZE;
-    if (gx >= vx1-3 && gx <= vx2+3 && gy >= vy1-3 && gy <= vy2+3) {
-      if (!interpPos[a.name]) interpPos[a.name] = { x:a.x, y:a.y };
-      interpPos[a.name].x += (a.x - interpPos[a.name].x) * 0.12;
-      interpPos[a.name].y += (a.y - interpPos[a.name].y) * 0.12;
-      drawList.push({ type:'agent', y:interpPos[a.name].y+8, x:interpPos[a.name].x, data:a, rx:interpPos[a.name].x, ry:interpPos[a.name].y });
-    }
-  }
-
-  // Y-sort
-  drawList.sort((a, b) => a.y - b.y);
-
-  // Draw
-  for (const item of drawList) {
-    switch (item.type) {
-      case 'stump': drawStump(item.x, item.y - 2); break;
-      case 'tree': drawTree(item.x, item.y, item.treeType, item.wobble); break;
-      case 'rock': drawRock(item.x, item.y - 2); break;
-      case 'building': drawBuilding(item.data, item.x, item.y - TILE_SIZE - 16); break;
-      case 'animal': drawAnimal(item.data, item.rx, item.ry); break;
-      case 'agent': drawAgent(item.data, item.rx, item.ry); break;
-    }
+  dl.sort((a,b)=>a.y-b.y);
+  for(const i of dl){
+    if(i.t==='stump')drawStump(i.x,i.y-2);
+    else if(i.t==='tree')drawTree(i.x,i.y,i.tt,i.w);
+    else if(i.t==='rock')drawRock(i.x,i.y-2);
+    else if(i.t==='bld')drawBuilding(i.d,i.x,i.y-TILE_SIZE-12);
+    else if(i.t==='ani')drawAnimal(i.d,i.rx,i.ry);
+    else if(i.t==='agt')drawAgent(i.d,i.rx,i.ry);
   }
 
   // Particles
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const p = particles[i];
-    p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.life--;
-    if (p.life <= 0) { particles.splice(i, 1); continue; }
-    ctx.globalAlpha = p.life / p.maxLife;
-    ctx.fillStyle = p.color;
-    ctx.fillRect(p.x - 1, p.y - 1, p.size, p.size);
-    ctx.globalAlpha = 1;
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.vy+=.05;p.life--;if(p.life<=0){particles.splice(i,1);continue}ctx.globalAlpha=p.life/p.ml;ctx.fillStyle=p.c;ctx.fillRect(p.x-1,p.y-1,p.s,p.s);ctx.globalAlpha=1}
+  for(const a of serverState.agents){const ip=interpPos[a.name];if(!ip)continue;
+    if(a.currentTask==='chop'&&a.taskTimer>0&&Math.random()<.1)particles.push({x:ip.x,y:ip.y-10,vx:(Math.random()-.5)*1.5,vy:-Math.random()*1.5,life:16,ml:16,c:'#8B6914',s:2});
+    if(a.currentTask==='mine'&&a.taskTimer>0&&Math.random()<.08)particles.push({x:ip.x,y:ip.y-10,vx:(Math.random()-.5)*1.5,vy:-Math.random()*1.5,life:12,ml:12,c:Math.random()<.3?'#fc0':'#888',s:2});
+    if(a.currentTask==='fight'&&Math.random()<.12){particles.push({x:ip.x+(Math.random()-.5)*6,y:ip.y-4,vx:(Math.random()-.5)*2,vy:-Math.random()*1.5,life:10,ml:10,c:'#f33',s:3});ctx.fillStyle='rgba(255,50,50,'+(0.1+Math.sin(now*.01)*.08).toFixed(2)+')';ctx.beginPath();ctx.arc(ip.x,ip.y,16,0,Math.PI*2);ctx.fill()}
+    if(!a._pH)a._pH=a.health;if(a.health<a._pH)floatingTexts.push({x:ip.x,y:ip.y-26,text:'-'+Math.round(a._pH-a.health),life:40,ml:40});a._pH=a.health;
   }
+  for(let i=floatingTexts.length-1;i>=0;i--){const f=floatingTexts[i];f.y-=.5;f.life--;if(f.life<=0){floatingTexts.splice(i,1);continue}ctx.globalAlpha=f.life/f.ml;ctx.fillStyle='#f44';ctx.font='bold 10px monospace';ctx.textAlign='center';ctx.fillText(f.text,f.x,f.y);ctx.textAlign='left';ctx.globalAlpha=1}
 
-  // Generate task particles (only at agent position, not random)
-  for (const a of serverState.agents) {
-    const ip = interpPos[a.name];
-    if (!ip) continue;
-    if (a.currentTask === 'chop' && a.taskTimer > 0 && Math.random() < 0.12) {
-      particles.push({ x:ip.x+(Math.random()-0.5)*6, y:ip.y-12, vx:(Math.random()-0.5)*1.5, vy:-Math.random()*1.5, life:18, maxLife:18, color:'#8B6914', size:2 });
-    }
-    if (a.currentTask === 'mine' && a.taskTimer > 0 && Math.random() < 0.1) {
-      particles.push({ x:ip.x+(Math.random()-0.5)*6, y:ip.y-12, vx:(Math.random()-0.5)*1.5, vy:-Math.random()*1.5, life:14, maxLife:14, color: Math.random()<0.3?'#ffcc00':'#888', size:2 });
-    }
-    if (a.currentTask === 'fight' && Math.random() < 0.15) {
-      particles.push({ x:ip.x+(Math.random()-0.5)*8, y:ip.y-4, vx:(Math.random()-0.5)*2, vy:-Math.random()*1.5, life:10, maxLife:10, color:'#ff3333', size:3 });
-    }
-    // Red combat flash
-    if (a.currentTask === 'fight') {
-      ctx.fillStyle = 'rgba(255,50,50,' + (0.1 + Math.sin(now*0.01)*0.08).toFixed(2) + ')';
-      ctx.beginPath(); ctx.arc(ip.x, ip.y, 18, 0, Math.PI*2); ctx.fill();
-    }
-    // Floating damage
-    if (!a._prevHealth) a._prevHealth = a.health;
-    if (a.health < a._prevHealth) {
-      floatingTexts.push({ x:ip.x, y:ip.y-28, text:'-'+Math.round(a._prevHealth-a.health), color:'#ff4444', life:40, maxLife:40 });
-    }
-    a._prevHealth = a.health;
-  }
-
-  // Floating texts
-  for (let i = floatingTexts.length-1; i >= 0; i--) {
-    const ft = floatingTexts[i]; ft.y -= 0.5; ft.life--;
-    if (ft.life <= 0) { floatingTexts.splice(i,1); continue; }
-    ctx.globalAlpha = ft.life / ft.maxLife;
-    ctx.fillStyle = ft.color; ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center';
-    ctx.fillText(ft.text, ft.x, ft.y);
-    ctx.textAlign = 'left'; ctx.globalAlpha = 1;
-  }
-
-  // Day/night overlay with smooth cosine interpolation
-  const tod = serverState.timeOfDay;
-  let overlayR = 10, overlayG = 10, overlayB = 40, overlayA = 0;
-  if (tod < 0.20 || tod > 0.80) {
-    overlayA = 0.4; overlayR = 10; overlayG = 10; overlayB = 40;
-  } else if (tod < 0.30) {
-    const t = (tod - 0.20) / 0.10;
-    const cs = (1 - Math.cos(t * Math.PI)) * 0.5; // smooth
-    overlayA = 0.4 * (1 - cs);
-    overlayR = Math.floor(255 * 0.15 * (1-cs));
-    overlayG = Math.floor(180 * 0.08 * (1-cs));
-    overlayB = Math.floor(100 * 0.05 * (1-cs));
-  } else if (tod > 0.70 && tod <= 0.80) {
-    const t = (tod - 0.70) / 0.10;
-    const cs = (1 - Math.cos(t * Math.PI)) * 0.5;
-    overlayA = 0.4 * cs;
-    if (cs < 0.5) { overlayR = Math.floor(255*0.15*cs*2); overlayG = Math.floor(140*0.1*cs*2); overlayB = Math.floor(60*0.1*cs*2); }
-    else { overlayR = Math.floor(20*(cs-0.5)*2 + 38*(1-(cs-0.5)*2)); overlayG = Math.floor(20*(cs-0.5)*2 + 14*(1-(cs-0.5)*2)); overlayB = Math.floor(60*(cs-0.5)*2 + 6*(1-(cs-0.5)*2)); }
-  }
-  if (overlayA > 0.005) {
-    ctx.fillStyle = 'rgba('+overlayR+','+overlayG+','+overlayB+','+overlayA.toFixed(3)+')';
-    ctx.fillRect(camX, camY, W/zoom, H/zoom);
-  }
-
-  // Night window glow + campfire glow
-  const isNight = tod > 0.75 || tod < 0.25;
-  if (isNight) {
-    for (const b of serverState.buildings) {
-      if (!b.complete || b.x < vx1-1 || b.x > vx2+1 || b.y < vy1-1 || b.y > vy2+1) continue;
-      const bx = b.x*TILE_SIZE, by = b.y*TILE_SIZE;
-      if (['Wood Hut','Log Cabin','Stone House','Town Hall','Blacksmith','Barracks','Church','Library'].includes(b.type)) {
-        ctx.fillStyle = 'rgba(255,215,0,0.5)';
-        ctx.fillRect(bx+4, by+12, 4, 4); ctx.fillRect(bx+28, by+12, 4, 4);
-        // Glow
-        ctx.fillStyle = 'rgba(255,200,80,0.06)';
-        ctx.beginPath(); ctx.arc(bx+20, by+16, 30, 0, Math.PI*2); ctx.fill();
-      }
-      if (b.type === 'Campfire') {
-        ctx.fillStyle = 'rgba(255,150,50,0.12)';
-        ctx.beginPath(); ctx.arc(bx+8, by+8, 35, 0, Math.PI*2); ctx.fill();
-      }
-    }
-  }
+  // Day/night
+  const tod=serverState.timeOfDay;let oa=0;
+  if(tod<.2||tod>.8)oa=.4;
+  else if(tod<.3)oa=.4*(1-(1-Math.cos((tod-.2)/.1*Math.PI))*.5);
+  else if(tod>.7)oa=.4*(1-Math.cos((tod-.7)/.1*Math.PI))*.5;
+  if(oa>.005){ctx.fillStyle='rgba(10,10,40,'+oa.toFixed(3)+')';ctx.fillRect(camX,camY,W/zoom,H/zoom)}
+  // Night glow
+  if(tod>.75||tod<.25){for(const b of serverState.buildings){if(!b.complete||b.x<vx1||b.x>vx2||b.y<vy1||b.y>vy2)continue;const bx=b.x*TILE_SIZE,by=b.y*TILE_SIZE;
+    if(['Wood Hut','Log Cabin','Stone House','Town Hall','Blacksmith','Church','Barracks','Library'].includes(b.type)){ctx.fillStyle='rgba(255,215,0,0.5)';ctx.fillRect(bx+3,by+10,3,3);ctx.fillRect(bx+24,by+10,3,3);ctx.fillStyle='rgba(255,200,80,0.05)';ctx.beginPath();ctx.arc(bx+16,by+16,28,0,Math.PI*2);ctx.fill()}
+    if(b.type==='Campfire'){ctx.fillStyle='rgba(255,140,40,0.1)';ctx.beginPath();ctx.arc(bx+14,by+10,30,0,Math.PI*2);ctx.fill()}
+  }}
 
   ctx.restore();
-
-  // Banner timer
-  if (bannerTimer > 0) { bannerTimer--; if (bannerTimer <= 0) { document.getElementById('event-banner').classList.remove('visible'); lastBannerText = ''; } }
+  if(bannerTimer>0){bannerTimer--;if(bannerTimer<=0){document.getElementById('event-banner').classList.remove('visible');lastBannerText=''}}
 }
-
-connect();
-requestAnimationFrame(render);
+connect();requestAnimationFrame(render);
 </script>
-</body>
-</html>
+</body></html>
